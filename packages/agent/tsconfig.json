@@ -9,14 +9,10 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "rootDir": "src",
-    "composite": true,
     "declaration": true,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true
   },
-  "include": ["src/**/*"],
-  "references": [
-    { "path": "../pipeline" },
-    { "path": "../shared" }
-  ]
+  "include": ["src/**/*"]
 }

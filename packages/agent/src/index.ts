@@ -1,8 +1,9 @@
 /**
- * @kleros-scout/agent
+ * @kleros-scout/agent — Srelok
  *
- * LangGraph-powered AI curation agent.
- * Orchestrates discovery → research → evaluate → build → submit.
+ * LangGraph-style AI curation agent.
+ * Orchestrates: research → evaluate → build → submit
  */
 
-export { createAgentGraph } from "./graph.js";
+export { runGraph, type GraphResult } from "./graph.js";
+export { createInitialState, type AgentGraphState, type CandidateState } from "./state.js";

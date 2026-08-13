@@ -1,0 +1,151 @@
+---
+/**
+ * Scene 4: Chain Map — Coverage Visualization
+ *
+ * Geometric representation of eligible chains.
+ * Each node is sized by submission count, colored by chain identity.
+ * Pure SVG with GSAP scroll-driven animations — no Three.js overhead.
+ */
+
+const chains = [
+  { id: "ethereum", label: "ETH", color: "#627eea", x: 50, y: 30 },
+  { id: "base", label: "BASE", color: "#0052ff", x: 25, y: 45 },
+  { id: "arbitrum", label: "ARB", color: "#28a0f0", x: 75, y: 45 },
+  { id: "optimism", label: "OP", color: "#ff0420", x: 35, y: 65 },
+  { id: "gnosis", label: "GNO", color: "#04795b", x: 65, y: 65 },
+  { id: "polygon", label: "POL", color: "#8247e5", x: 15, y: 70 },
+  { id: "linea", label: "LIN", color: "#61dfff", x: 85, y: 70 },
+  { id: "avalanche", label: "AVAX", color: "#e84142", x: 45, y: 80 },
+  { id: "zksync", label: "ZK", color: "#8c8dfc", x: 55, y: 20 },
+  { id: "celo", label: "CELO", color: "#fcff52", x: 20, y: 30 },
+  { id: "megaeth", label: "MEGA", color: "#ff6b35", x: 80, y: 30 },
+  { id: "solana", label: "SOL", color: "#9945ff", x: 50, y: 55 },
+];
+
+// Connections between chains (represents cross-chain activity)
+const connections = [
+  [0, 1], [0, 2], [0, 8], [1, 3], [2, 4], [1, 11],
+  [3, 7], [4, 6], [5, 1], [9, 0], [10, 2], [11, 4],
+];
+---
+
+<section class="chainmap section" id="chainmap">
+  <div class="container">
+    <h2 data-reveal="heading">Chain Coverage</h2>
+    <p data-reveal="paragraph">
+      Srelok monitors 12 chains for untagged contracts. Each node represents a chain — sized by activity, connected by cross-chain patterns.
+    </p>
+
+    <div class="chainmap__canvas" data-reveal="element">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="chainmap__svg">
+        <!-- Connections -->
+        <g class="chainmap__connections" opacity="0.15">
+          {connections.map(([a, b]) => (
+            <line
+              x1={chains[a].x}
+              y1={chains[a].y}
+              x2={chains[b].x}
+              y2={chains[b].y}
+              stroke="white"
+              stroke-width="0.15"
+            />
+          ))}
+        </g>
+
+        <!-- Chain nodes -->
+        {chains.map((chain) => (
+          <g class="chainmap__node" data-chain={chain.id}>
+            <!-- Glow -->
+            <circle
+              cx={chain.x}
+              cy={chain.y}
+              r="3.5"
+              fill={chain.color}
+              opacity="0.1"
+              class="chainmap__glow"
+            />
+            <!-- Core -->
+            <circle
+              cx={chain.x}
+              cy={chain.y}
+              r="1.8"
+              fill={chain.color}
+              opacity="0.8"
+              class="chainmap__core"
+            />
+            <!-- Label -->
+            <text
+              x={chain.x}
+              y={chain.y + 4.5}
+              text-anchor="middle"
+              fill={chain.color}
+              font-size="2"
+              font-family="var(--font-mono)"
+              opacity="0.7"
+            >
+              {chain.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  </div>
+</section>
+
+<script>
+  import gsap from "gsap";
+  import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+  // Animate chain nodes on scroll
+  const nodes = document.querySelectorAll(".chainmap__node");
+  const connections = document.querySelector(".chainmap__connections");
+
+  gsap.fromTo(
+    nodes,
+    { scale: 0, transformOrigin: "center" },
+    {
+      scale: 1,
+      duration: 0.6,
+      stagger: 0.08,
+      ease: "back.out(1.7)",
+      scrollTrigger: {
+        trigger: ".chainmap__svg",
+        start: "top 75%",
+        once: true,
+      },
+    }
+  );
+
+  // Pulse animation on glow circles (continuous, subtle)
+  gsap.to(".chainmap__glow", {
+    r: 4.5,
+    opacity: 0.05,
+    duration: 2,
+    stagger: { each: 0.2, repeat: -1, yoyo: true },
+    ease: "sine.inOut",
+  });
+</script>
+
+<style>
+  .chainmap__canvas {
+    margin-top: 3rem;
+    width: 100%;
+    max-width: 800px;
+    aspect-ratio: 1;
+    margin-inline: auto;
+  }
+
+  .chainmap__svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .chainmap__node {
+    cursor: default;
+    transition: opacity 0.3s;
+  }
+
+  .chainmap__node:hover .chainmap__glow {
+    opacity: 0.25 !important;
+  }
+</style>

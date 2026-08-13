@@ -1,20 +1,19 @@
 {
   "name": "@kleros-scout/agent",
   "version": "0.1.0",
-  "description": "LangGraph-powered AI agent for curation decisions",
+  "description": "Srelok — LangGraph-style AI agent for curation decisions",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/index.ts",
-    "run-cycle": "tsx src/run-cycle.ts"
+    "start": "tsx src/run-cycle.ts",
+    "cycle": "tsx src/run-cycle.ts --dry-run",
+    "cycle:live": "tsx src/run-cycle.ts"
   },
   "dependencies": {
-    "@langchain/core": "0.3.26",
-    "@langchain/langgraph": "0.2.39",
-    "@langchain/openai": "0.3.17",
+    "openai": "4.73.1",
     "@kleros-scout/pipeline": "*",
     "@kleros-scout/shared": "*",
     "dotenv": "16.4.7"

@@ -1,0 +1,201 @@
+---
+/**
+ * Scene 5: Rewards — The Counter
+ *
+ * Bold number showing total PNK earned, with breakdowns per registry.
+ * Stepped counter animation. Horizontal fill bars on scroll.
+ */
+
+const registries = [
+  { key: "atr", label: "Address Tags", pool: "100,000", color: "var(--chain-base)" },
+  { key: "tokens", label: "Token Registry", pool: "100,000", color: "var(--chain-arbitrum)" },
+  { key: "cdn", label: "Contract Domains", pool: "100,000", color: "var(--chain-gnosis)" },
+  { key: "atq", label: "Tag Queries", pool: "60,000", color: "var(--color-accent)" },
+];
+---
+
+<section class="rewards section" id="rewards">
+  <div class="container">
+    <div class="rewards__header">
+      <span class="rewards__label mono" data-reveal="element">TOTAL EARNED</span>
+      <div class="rewards__total">
+        <span class="rewards__amount" data-reveal="counter" data-target="0" id="total-pnk">0</span>
+        <span class="rewards__unit" data-reveal="element">PNK</span>
+      </div>
+      <p class="rewards__note" data-reveal="paragraph">
+        Rewards accumulate monthly from accepted submissions across all four Scout registries.
+      </p>
+    </div>
+
+    <div class="rewards__breakdown" data-reveal="group">
+      {registries.map((reg) => (
+        <div class="rewards__registry" data-reveal="group-item">
+          <div class="rewards__registry-header">
+            <span class="rewards__registry-name">{reg.label}</span>
+            <span class="rewards__registry-pool mono">{reg.pool} PNK/mo</span>
+          </div>
+          <div class="rewards__bar">
+            <div
+              class="rewards__bar-fill"
+              style={`background: ${reg.color}; width: 0%`}
+              data-target-width="0"
+            />
+          </div>
+          <div class="rewards__registry-stats mono">
+            <span>0 submitted</span>
+            <span>0 accepted</span>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div class="rewards__deposit-info" data-reveal="element">
+      <div class="rewards__info-card">
+        <span class="rewards__info-label">Submission Deposit</span>
+        <span class="rewards__info-value mono">51.6 xDAI</span>
+        <span class="rewards__info-note">Returned in full if accepted (84h challenge period)</span>
+      </div>
+      <div class="rewards__info-card">
+        <span class="rewards__info-label">IPFS Upload</span>
+        <span class="rewards__info-value mono">$0.01 USDC</span>
+        <span class="rewards__info-note">Per submission, paid on Base via x402</span>
+      </div>
+      <div class="rewards__info-card">
+        <span class="rewards__info-label">Max Reward</span>
+        <span class="rewards__info-value mono">500 PNK</span>
+        <span class="rewards__info-note">Per successful ATR/Token/CDN submission</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rewards {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .rewards__header {
+    margin-bottom: 4rem;
+  }
+
+  .rewards__label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .rewards__total {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
+  .rewards__amount {
+    font-family: var(--font-mono);
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+  }
+
+  .rewards__unit {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    color: var(--color-accent);
+  }
+
+  .rewards__note {
+    margin-top: 1rem;
+    max-width: 450px;
+  }
+
+  .rewards__breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+  }
+
+  .rewards__registry {
+    padding: 1.5rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+  }
+
+  .rewards__registry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .rewards__registry-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .rewards__registry-pool {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+  }
+
+  .rewards__bar {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .rewards__bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rewards__registry-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+  }
+
+  .rewards__deposit-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .rewards__info-card {
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .rewards__info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+
+  .rewards__info-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .rewards__info-note {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+  }
+</style>

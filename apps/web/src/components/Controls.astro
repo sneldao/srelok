@@ -1,0 +1,339 @@
+---
+/**
+ * Scene 6: Operator Controls
+ *
+ * Functional interface for the agent operator:
+ * - Candidate review queue (approve/reject)
+ * - Manual discovery trigger
+ * - Agent status
+ *
+ * This breaks from the scroll-driven flow intentionally.
+ * The contrast signals "you're now in control."
+ */
+---
+
+<section class="controls section" id="controls">
+  <div class="container">
+    <h2 data-reveal="heading">Operator Controls</h2>
+    <p data-reveal="paragraph">
+      Review candidates, trigger discovery cycles, and monitor the agent.
+    </p>
+
+    <div class="controls__grid" data-reveal="group">
+      <!-- Candidate Queue -->
+      <div class="controls__panel" data-reveal="group-item">
+        <div class="controls__panel-header">
+          <h3>Review Queue</h3>
+          <span class="controls__badge mono" id="queue-count">0</span>
+        </div>
+        <div class="controls__queue" id="candidate-queue">
+          <div class="controls__empty">
+            <p class="mono">No candidates pending review</p>
+            <p>The agent auto-approves high-confidence submissions. Lower confidence items appear here for your decision.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Status + Actions -->
+      <div class="controls__sidebar" data-reveal="group-item">
+        <!-- Status -->
+        <div class="controls__panel controls__panel--compact">
+          <div class="controls__panel-header">
+            <h3>Agent Status</h3>
+            <span class="status-dot status-dot--accepted"></span>
+          </div>
+          <div class="controls__status-grid">
+            <div class="controls__status-item">
+              <span class="controls__status-label">Phase</span>
+              <span class="controls__status-value mono" id="agent-phase">idle</span>
+            </div>
+            <div class="controls__status-item">
+              <span class="controls__status-label">Last cycle</span>
+              <span class="controls__status-value mono" id="last-cycle">—</span>
+            </div>
+            <div class="controls__status-item">
+              <span class="controls__status-label">Uptime</span>
+              <span class="controls__status-value mono" id="uptime">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="controls__panel controls__panel--compact">
+          <div class="controls__panel-header">
+            <h3>Actions</h3>
+          </div>
+          <div class="controls__actions">
+            <button class="controls__btn" id="btn-discover">
+              <span>Trigger Discovery</span>
+              <span class="mono">→</span>
+            </button>
+            <button class="controls__btn controls__btn--secondary" id="btn-refresh">
+              <span>Refresh Stats</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+
+  // Fetch candidates
+  async function loadCandidates() {
+    try {
+      const res = await fetch(`${API_BASE}/api/candidates?status=pending`);
+      const candidates = await res.json();
+      renderQueue(candidates);
+    } catch {
+      // API not available — leave empty state
+    }
+  }
+
+  function renderQueue(candidates: any[]) {
+    const queue = document.getElementById("candidate-queue")!;
+    const count = document.getElementById("queue-count")!;
+    count.textContent = String(candidates.length);
+
+    if (candidates.length === 0) return;
+
+    queue.innerHTML = candidates.map((c: any) => `
+      <div class="controls__candidate">
+        <div class="controls__candidate-info">
+          <span class="mono">${c.address?.slice(0, 10)}...</span>
+          <span class="chain-badge chain-badge--${c.chain}">${c.chain}</span>
+        </div>
+        <div class="controls__candidate-meta">
+          <span>${c.contractName || "Unknown"}</span>
+          <span class="mono">conf: ${(c.confidence * 100).toFixed(0)}%</span>
+        </div>
+        <div class="controls__candidate-actions">
+          <button class="controls__btn-sm controls__btn-sm--approve" data-id="${c.id}">Approve</button>
+          <button class="controls__btn-sm controls__btn-sm--reject" data-id="${c.id}">Reject</button>
+        </div>
+      </div>
+    `).join("");
+
+    // Bind approve/reject
+    queue.querySelectorAll("[data-id]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const id = (e.target as HTMLElement).dataset.id;
+        const action = (e.target as HTMLElement).classList.contains("controls__btn-sm--approve") ? "approve" : "reject";
+        await fetch(`${API_BASE}/api/candidates/${id}/${action}`, { method: "POST" });
+        loadCandidates();
+      });
+    });
+  }
+
+  // Trigger discovery
+  document.getElementById("btn-discover")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-discover") as HTMLButtonElement;
+    btn.disabled = true;
+    btn.querySelector("span")!.textContent = "Running...";
+    try {
+      await fetch(`${API_BASE}/api/discover`, { method: "POST" });
+    } catch {}
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.querySelector("span")!.textContent = "Trigger Discovery";
+      loadCandidates();
+    }, 3000);
+  });
+
+  // Health polling
+  async function pollHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`);
+      const health = await res.json();
+      const uptime = document.getElementById("uptime");
+      if (uptime) {
+        const hrs = Math.floor(health.uptime / 3600);
+        const mins = Math.floor((health.uptime % 3600) / 60);
+        uptime.textContent = `${hrs}h ${mins}m`;
+      }
+    } catch {}
+  }
+
+  // Init
+  loadCandidates();
+  pollHealth();
+  setInterval(pollHealth, 30000);
+</script>
+
+<style>
+  .controls__grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  .controls__panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+
+  .controls__panel--compact {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .controls__panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .controls__panel-header h3 {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .controls__badge {
+    background: var(--color-accent);
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+  }
+
+  .controls__queue {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .controls__empty {
+    padding: 2rem;
+    text-align: center;
+    border: 1px dashed var(--color-border);
+    border-radius: 6px;
+  }
+
+  .controls__empty p:first-child {
+    margin-bottom: 0.5rem;
+    color: var(--color-text-muted);
+  }
+
+  .controls__empty p:last-child {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .controls__candidate {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .controls__candidate-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .controls__candidate-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .controls__candidate-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .controls__btn-sm {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .controls__btn-sm--approve:hover {
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
+  .controls__btn-sm--reject:hover {
+    border-color: var(--color-error);
+    color: var(--color-error);
+  }
+
+  .controls__status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .controls__status-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+  }
+
+  .controls__status-label {
+    color: var(--color-text-muted);
+  }
+
+  .controls__status-value {
+    color: var(--color-text);
+  }
+
+  .controls__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .controls__btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--color-accent);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .controls__btn:hover {
+    opacity: 0.9;
+  }
+
+  .controls__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .controls__btn--secondary {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+
+  .controls__sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (max-width: 768px) {
+    .controls__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

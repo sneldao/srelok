@@ -3,12 +3,30 @@ import Base from "../layouts/Base.astro";
 import Hero from "../components/Hero.astro";
 import Pipeline from "../components/Pipeline.astro";
 import LiveFeed from "../components/LiveFeed.astro";
+import ChainMap from "../components/ChainMap.astro";
+import Rewards from "../components/Rewards.astro";
+import Controls from "../components/Controls.astro";
 ---
 
 <Base title="Srelok — The On-Chain Detective">
   <Hero />
   <Pipeline />
+  <ChainMap />
   <LiveFeed />
+  <Rewards />
+  <Controls />
+
+  <!-- Footer -->
+  <footer class="section" style="padding: 2rem 0; border-top: 1px solid var(--color-border);">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <span class="mono" style="font-size: 0.75rem; color: var(--color-text-muted);">
+        srelok v0.1.0 — built with kiro
+      </span>
+      <a href="https://github.com/sneldao/srelok" target="_blank" rel="noopener" class="mono" style="font-size: 0.75rem; color: var(--color-text-muted); text-decoration: none;">
+        github ↗
+      </a>
+    </div>
+  </footer>
 
   <!-- Scene initialization -->
   <script>
@@ -22,14 +40,6 @@ import LiveFeed from "../components/LiveFeed.astro";
     }
 
     // Initialize GSAP reveal animations
-    document.addEventListener("DOMContentLoaded", () => {
-      // Small delay to let fonts load
-      setTimeout(() => {
-        initReveals();
-      }, 100);
-    });
-
-    // Also trigger on page load (for Astro)
     initReveals();
   </script>
 </Base>
