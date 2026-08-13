@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "TypeScript type check on save",
+      "trigger": "PostFileSave",
+      "description": "Runs TypeScript type-checking after any .ts file is saved to catch errors early.",
+      "matcher": "\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "cd /Users/udingethe/Dev/kleros && npx tsc --noEmit 2>&1 | head -20; exit ${PIPESTATUS[0]}",
+        "timeout": 30
+      }
+    }
+  ]
+}

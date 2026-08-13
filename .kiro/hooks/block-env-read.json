@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Block reading .env files",
+      "trigger": "PreToolUse",
+      "description": "Prevents the agent from reading .env files that contain wallet keys and API secrets.",
+      "matcher": "read",
+      "action": {
+        "type": "command",
+        "command": "cd /Users/udingethe/Dev/kleros && if echo \"$KIRO_FILE_PATH\" | grep -q \"\\.env$\"; then echo \"BLOCKED: Refusing to read .env file (contains secrets)\" >&2; exit 2; fi; exit 0"
+      }
+    }
+  ]
+}

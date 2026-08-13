@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Validate JSON on save",
+      "trigger": "PostFileSave",
+      "description": "Validates JSON syntax on save to prevent malformed config or payload files.",
+      "matcher": "\\.json$",
+      "action": {
+        "type": "command",
+        "command": "cd /Users/udingethe/Dev/kleros && cat \"$KIRO_FILE_PATH\" | python3 -m json.tool > /dev/null 2>&1; if [ $? -ne 0 ]; then echo \"INVALID JSON: $KIRO_FILE_PATH\" >&2; exit 2; fi; exit 0"
+      }
+    }
+  ]
+}
