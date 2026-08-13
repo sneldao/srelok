@@ -1,104 +1,109 @@
-# Kleros Scout Curation Agent
+# Srelok
 
-AI-agent-powered participation in the [Kleros Scout Incentive Program](https://blog.kleros.io/) — earning PNK rewards by curating on-chain metadata across multiple chains.
+> The on-chain detective — autonomous AI curation for the decentralized web.
 
-## What This Does
+Srelok is an AI agent that earns PNK rewards by participating in the [Kleros Scout Incentive Program](https://docs.kleros.io/products/scout-earn). It autonomously discovers untagged contracts across 12+ chains, reasons about what they are, and submits accurate metadata to Kleros Scout registries.
 
-This project automates the full lifecycle of Kleros Scout curation:
+## What It Does
 
-1. **Discover** untagged contracts on eligible chains
-2. **Validate** candidates against registry policies and explorer tagging status
-3. **Build** compliant item.json payloads per MetaEvidence schema
-4. **Submit** entries on-chain to earn monthly PNK rewards
-
-## Reward Opportunity
-
-| Registry | Monthly Pool | Max per Entry | Notes |
-|---|---|---|---|
-| Address Tags (ATR) | 100,000 PNK | 500 PNK | Must be untagged on explorer |
-| Token Registry | 100,000 PNK | 500 PNK | Must be untagged; 5k+ holders for Solana |
-| Contract-Domain (CDN) | 100,000 PNK | 500 PNK | All compliant entries rewarded |
-| Address Tag Queries (ATQ) | 60,000 PNK | 3,000 PNK | NPM packages that batch-generate tags |
-
-## Strategy
-
-**Priority order:**
-1. CDN — no explorer-tag gating, every compliant entry earns
-2. ATQ — highest reward ceiling, leverage batch automation
-3. ATR on low-coverage chains — less competition (Linea, MegaETH, Celo)
-4. Token Registry — high-quality metadata required
-
-## Prerequisites
-
-- Node.js 20+
-- A wallet on Gnosis Chain with xDAI (for submission deposits)
-- USDC on Base (for IPFS uploads at $0.01 each)
-- RPC endpoints for eligible chains (free tiers work for reads)
-
-## Setup
-
-```bash
-cp config/chains.example.json config/chains.json
-cp .env.example .env
-# Fill in your RPC URLs and wallet key
-npm install
+```
+DISCOVER → RESEARCH → EVALUATE → BUILD → SUBMIT → TRACK
 ```
 
-## Usage
+1. **Discovers** untagged contracts on eligible chains (Base, Arbitrum, Linea, etc.)
+2. **Researches** what each contract does (source analysis, deployer identification)
+3. **Evaluates** policy compliance (registry rules, explorer tagging status)
+4. **Builds** item.json payloads using the seed-first pattern with MetaEvidence cross-check
+5. **Submits** to Kleros Scout registries on Gnosis Chain (IPFS upload + addItem tx)
+6. **Tracks** submissions through the challenge window
 
-```bash
-# Discover untagged contracts on a chain
-npm run discover -- --chain base
+## Architecture
 
-# Validate a candidate against registry policy
-npm run validate -- --address 0x... --chain base --registry atr
-
-# Build and dry-run a submission
-npm run submit -- --address 0x... --chain base --registry atr --dry-run
-
-# Submit for real
-npm run submit -- --address 0x... --chain base --registry atr
 ```
+┌─────────────────────────────────────────────────────┐
+│  Astro Frontend (Three.js + GSAP + Lenis)           │
+│  Scroll-driven UI showing the agent at work         │
+├─────────────────────────────────────────────────────┤
+│  Go Daemon (scheduler, REST API, SSE, WebSocket)    │
+├─────────────────────────────────────────────────────┤
+│  LangGraph Agent (reasoning, strategy, decisions)   │
+├─────────────────────────────────────────────────────┤
+│  TS Pipeline (viem, x402-fetch, on-chain ops)       │
+├─────────────────────────────────────────────────────┤
+│  SQLite (candidates, submissions, rewards, logs)    │
+└─────────────────────────────────────────────────────┘
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Astro 7, GSAP (ScrollTrigger), Three.js, Lenis, Tailwind |
+| Backend | Go (net/http, goroutines, WebSocket, SSE) |
+| Agent | LangGraph (TypeScript), OpenAI |
+| Pipeline | TypeScript, viem, x402-fetch |
+| Database | SQLite |
+| Protocol | Kleros Scout (LightGeneralizedTCR on Gnosis) |
 
 ## Project Structure
 
 ```
-src/
-  candidates/   # Discovery: find untagged contracts on eligible chains
-  submit/       # Build item.json, upload to IPFS, send addItem tx
-  challenge/    # Identify non-compliant entries, earn challenger bounties
-  utils/        # Shared: RPC clients, explorer APIs, signing, logging
-config/         # Chain configs, registry addresses, wallet settings
-data/
-  cache/        # Cached explorer responses, contract metadata
-  submissions/  # Records of submissions and their status
-scripts/        # One-shot utilities (batch check, status report, etc.)
+apps/
+  web/              # Astro frontend — scroll-driven agent visualization
+  daemon/           # Go backend — API, scheduler, process management
+packages/
+  pipeline/         # On-chain operations (tested against live Gnosis)
+  agent/            # LangGraph state machine
+  shared/           # Types, DB schema, constants
+.kiro/
+  steering/         # Persistent agent context (protocol knowledge)
+  hooks/            # Safety guards (secrets, linting, validation)
+docs/
+  IMPLEMENTATION_PLAN.md
 ```
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Test the pipeline against live Gnosis Chain
+cd packages/pipeline
+npx tsx scripts/test-registry.ts addressTags
+
+# Build the frontend
+cd apps/web
+npx astro build
+
+# Build the Go daemon
+cd apps/daemon
+go build -o srelok .
+```
+
+## Kiro Usage
+
+This project was built entirely with [Kiro CLI](https://kiro.dev) and demonstrates:
+
+- **Steering files** (`.kiro/steering/`) — persistent protocol knowledge that loads automatically every session. The agent knows Kleros Scout's reward rules, eligible chains, and submission constraints without re-explaining.
+- **Hooks** (`.kiro/hooks/`) — automated safety guards: secrets detection on save, TypeScript type-checking, JSON validation, commit-time secret scanning, and env file read blocking.
+- **Structured workflow** — from research (web fetching Kleros docs and skills) through architecture design to implementation, with task tracking throughout.
 
 ## Kleros Skills Integration
 
-This project uses the [Kleros Skills](https://skills.kleros.io/) knowledge base:
+Srelok uses the [Kleros Skills](https://skills.kleros.io/) knowledge base:
 
-- **kleros-curate** — Registry operations (submit, challenge, appeal, deploy)
-- **kleros-ipfs-upload** — IPFS pinning via x402 gateway ($0.01/upload on Base)
+- **kleros-curate** — Registry operations (submit, challenge, MetaEvidence, deposits)
+- **kleros-ipfs-upload** — IPFS pinning via x402 gateway ($0.01 USDC on Base)
 
-Agent bootstrap prompt:
-```
-Read https://skills.kleros.io/SKILL.md and follow it before interacting with Kleros protocol.
-```
+## Registries
 
-## Eligible Chains (August 2026)
-
-Ethereum, Arbitrum One, OP Mainnet, Base, Polygon, Gnosis, Linea, zkSync, Avalanche C-Chain, Celo, MegaETH, Solana, Robinhood Chain
-
-## Links
-
-- [Kleros Scout App](https://app.klerosscout.eth.limo/)
-- [Scout Docs](https://docs.kleros.io/products/scout)
-- [Earn with Scout](https://docs.kleros.io/products/scout-earn)
-- [Kleros Skills](https://skills.kleros.io/)
-- [kleros-skills GitHub](https://github.com/kleros/kleros-skills)
-- [Monthly Incentive Blog Posts](https://blog.kleros.io/)
+| Registry | Contract (Gnosis) | Reward Pool |
+|----------|-------------------|-------------|
+| Address Tags (ATR) | `0x66260C69...` | 100k PNK/month |
+| Token Registry | `0xeE1502e2...` | 100k PNK/month |
+| CDN | `0x957A53A9...` | 100k PNK/month |
+| ATQ | `0xAe6aaed5...` | 60k PNK/month |
 
 ## License
 

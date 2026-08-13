@@ -71,7 +71,7 @@ func main() {
 	// Graceful shutdown
 	go func() {
 		log.Printf("╔══════════════════════════════════════╗")
-		log.Printf("║   Kleros Scout Daemon v0.1.0        ║")
+		log.Printf("║   Srelok Daemon v0.1.0              ║")
 		log.Printf("║   Port: %s                          ║", port)
 		log.Printf("╚══════════════════════════════════════╝")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

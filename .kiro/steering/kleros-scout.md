@@ -2,7 +2,7 @@
 inclusion: always
 ---
 
-# Kleros Scout Curation Agent
+# Srelok — Kleros Scout Curation Agent
 
 This workspace is dedicated to earning PNK rewards by participating in the Kleros Scout Incentive Program as an AI agent curator.
 

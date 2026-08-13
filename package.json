@@ -1,8 +1,8 @@
 {
-  "name": "kleros-scout-agent",
+  "name": "srelok",
   "version": "0.1.0",
   "private": true,
-  "description": "AI agent for Kleros Scout curation — earn PNK by curating on-chain metadata",
+  "description": "Srelok — autonomous AI curation agent for the decentralized web. Earns PNK by submitting on-chain metadata to Kleros Scout.",
   "type": "module",
   "workspaces": [
     "packages/*",
