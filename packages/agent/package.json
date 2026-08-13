@@ -1,0 +1,27 @@
+{
+  "name": "@kleros-scout/agent",
+  "version": "0.1.0",
+  "description": "LangGraph-powered AI agent for curation decisions",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/index.ts",
+    "run-cycle": "tsx src/run-cycle.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "0.3.26",
+    "@langchain/langgraph": "0.2.39",
+    "@langchain/openai": "0.3.17",
+    "@kleros-scout/pipeline": "*",
+    "@kleros-scout/shared": "*",
+    "dotenv": "16.4.7"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "tsx": "4.19.2",
+    "@types/node": "22.9.0"
+  }
+}

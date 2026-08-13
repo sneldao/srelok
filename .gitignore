@@ -1,6 +1,23 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+packages/*/dist/
+apps/web/dist/
+
+# Environment
 .env
-data/cache/
-data/submissions/*.json
-!data/submissions/.gitkeep
+packages/pipeline/.env
+
+# Data
+packages/pipeline/data/cache/
+packages/pipeline/data/submissions/*.json
+!packages/pipeline/data/submissions/.gitkeep
+data/scout.db
+
+# Go
+apps/daemon/daemon
+
+# OS
+.DS_Store

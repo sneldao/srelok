@@ -1,18 +1,8 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true
-  },
-  "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "data"]
+  "files": [],
+  "references": [
+    { "path": "packages/pipeline" },
+    { "path": "packages/shared" },
+    { "path": "packages/agent" }
+  ]
 }
