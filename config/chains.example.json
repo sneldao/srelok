@@ -1,0 +1,115 @@
+{
+  "chains": {
+    "gnosis": {
+      "chainId": 100,
+      "name": "Gnosis Chain",
+      "rpc": "https://rpc.gnosischain.com",
+      "explorer": "gnosisscan.io",
+      "explorerApi": "https://api.gnosisscan.io/api",
+      "nativeCurrency": "xDAI",
+      "rewardEligible": true,
+      "notes": "Primary chain for Scout registries (ATR, Token, CDN, ATQ contracts live here)"
+    },
+    "base": {
+      "chainId": 8453,
+      "name": "Base",
+      "rpc": "https://mainnet.base.org",
+      "explorer": "basescan.org",
+      "explorerApi": "https://api.basescan.org/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true,
+      "notes": "Also used for IPFS upload payments (USDC via x402)"
+    },
+    "arbitrum": {
+      "chainId": 42161,
+      "name": "Arbitrum One",
+      "rpc": "https://arb1.arbitrum.io/rpc",
+      "explorer": "arbiscan.io",
+      "explorerApi": "https://api.arbiscan.io/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true
+    },
+    "optimism": {
+      "chainId": 10,
+      "name": "OP Mainnet",
+      "rpc": "https://mainnet.optimism.io",
+      "explorer": "optimistic.etherscan.io",
+      "explorerApi": "https://api-optimistic.etherscan.io/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true
+    },
+    "avalanche": {
+      "chainId": 43114,
+      "name": "Avalanche C-Chain",
+      "rpc": "https://api.avax.network/ext/bc/C/rpc",
+      "explorer": "snowscan.xyz",
+      "explorerApi": "https://api.snowscan.xyz/api",
+      "nativeCurrency": "AVAX",
+      "rewardEligible": true
+    },
+    "zksync": {
+      "chainId": 324,
+      "name": "zkSync Era",
+      "rpc": "https://mainnet.era.zksync.io",
+      "explorer": "era.zksync.network",
+      "explorerApi": "https://block-explorer-api.mainnet.zksync.io/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true
+    },
+    "linea": {
+      "chainId": 59144,
+      "name": "Linea",
+      "rpc": "https://rpc.linea.build",
+      "explorer": "lineascan.build",
+      "explorerApi": "https://api.lineascan.build/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true
+    },
+    "celo": {
+      "chainId": 42220,
+      "name": "Celo",
+      "rpc": "https://forno.celo.org",
+      "explorer": "celoscan.io",
+      "explorerApi": "https://api.celoscan.io/api",
+      "nativeCurrency": "CELO",
+      "rewardEligible": true
+    },
+    "polygon": {
+      "chainId": 137,
+      "name": "Polygon",
+      "rpc": "https://polygon-rpc.com",
+      "explorer": "polygonscan.com",
+      "explorerApi": "https://api.polygonscan.com/api",
+      "nativeCurrency": "MATIC",
+      "rewardEligible": true
+    },
+    "ethereum": {
+      "chainId": 1,
+      "name": "Ethereum",
+      "rpc": "https://eth.llamarpc.com",
+      "explorer": "etherscan.io",
+      "explorerApi": "https://api.etherscan.io/api",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true
+    },
+    "megaeth": {
+      "chainId": 18233,
+      "name": "MegaETH",
+      "rpc": "https://rpc.megaeth.com",
+      "explorer": "",
+      "explorerApi": "",
+      "nativeCurrency": "ETH",
+      "rewardEligible": true,
+      "notes": "New chain — verify RPC and explorer availability before use"
+    },
+    "solana": {
+      "name": "Solana",
+      "rpc": "https://api.mainnet-beta.solana.com",
+      "explorer": "solscan.io",
+      "explorerApi": "https://public-api.solscan.io",
+      "nativeCurrency": "SOL",
+      "rewardEligible": true,
+      "notes": "Non-EVM. Tokens need 5,000+ holders for reward eligibility."
+    }
+  }
+}

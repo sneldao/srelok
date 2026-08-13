@@ -1,0 +1,46 @@
+{
+  "_note": "Scout registry addresses on Gnosis Chain (chainId 100). Source: skills.kleros.io/kleros-curate/references/scout-registries.md",
+  "arbitrator": "0x9C1dA9A04925bDfDedf0f6421bC7EEa8305F9002",
+  "viewHelper": "0xB32e38B08FcC7b7610490f764b0F9bFd754dCE53",
+  "registries": {
+    "addressTags": {
+      "name": "Address Tags Registry (ATR)",
+      "description": "Maps contract addresses to human-readable labels",
+      "chain": "gnosis",
+      "contract": "0x66260C69d03837016d88c9877e61e08Ef74C59F2",
+      "rewardPool": "100000 PNK",
+      "maxPerSubmission": "500 PNK",
+      "excludedTypes": ["ERC-20", "ERC-721", "EIP-1167"],
+      "requiresExplorerCheck": true
+    },
+    "tokens": {
+      "name": "Token Registry",
+      "description": "Verified ERC-20 token metadata",
+      "chain": "gnosis",
+      "contract": "0xeE1502e29795Ef6C2D60F8D7120596abE3baD990",
+      "rewardPool": "100000 PNK",
+      "maxPerSubmission": "500 PNK",
+      "requiresExplorerCheck": true,
+      "solanaMinHolders": 5000
+    },
+    "cdn": {
+      "name": "Contract-Domain Names (CDN)",
+      "description": "Contract-to-domain pairings with project metadata",
+      "chain": "gnosis",
+      "contract": "0x957A53A994860BE4750810131d9c876b2f52d6E1",
+      "rewardPool": "100000 PNK",
+      "maxPerSubmission": "500 PNK",
+      "requiresExplorerCheck": false,
+      "notes": "All compliant submissions are rewarded — no explorer-tag gating"
+    },
+    "atq": {
+      "name": "Address Tag Queries (ATQ)",
+      "description": "NPM packages that batch-generate address tags",
+      "chain": "gnosis",
+      "contract": "0xAe6aaed5434244be3699c56E7Ebc828194F26dc3",
+      "rewardPool": "60000 PNK",
+      "maxPerSubmission": "3000 PNK",
+      "requiresExplorerCheck": false
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "kleros-scout-agent",
+  "version": "0.1.0",
+  "description": "AI agent for Kleros Scout curation — earn PNK by submitting on-chain metadata",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "discover": "tsx src/candidates/discover.ts",
+    "validate": "tsx src/submit/validate.ts",
+    "submit": "tsx src/submit/index.ts",
+    "challenge": "tsx src/challenge/index.ts",
+    "status": "tsx scripts/status.ts",
+    "check-explorer": "tsx scripts/check-explorer.ts"
+  },
+  "dependencies": {
+    "viem": "2.21.19",
+    "dotenv": "16.4.7",
+    "x402-fetch": "1.2.0"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "tsx": "4.19.2",
+    "@types/node": "22.9.0"
+  }
+}
