@@ -1,17 +1,35 @@
 ---
-
+import Base from "../layouts/Base.astro";
+import Hero from "../components/Hero.astro";
+import Pipeline from "../components/Pipeline.astro";
+import LiveFeed from "../components/LiveFeed.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Base title="Kleros Scout Agent — AI Curation for the Decentralized Web">
+  <Hero />
+  <Pipeline />
+  <LiveFeed />
+
+  <!-- Scene initialization -->
+  <script>
+    import { createChainScene } from "../lib/three/chain-particles";
+    import { initReveals } from "../lib/gsap/reveals";
+
+    // Initialize Three.js particle scene
+    const canvas = document.getElementById("scene-canvas") as HTMLCanvasElement;
+    if (canvas) {
+      createChainScene(canvas);
+    }
+
+    // Initialize GSAP reveal animations
+    document.addEventListener("DOMContentLoaded", () => {
+      // Small delay to let fonts load
+      setTimeout(() => {
+        initReveals();
+      }, 100);
+    });
+
+    // Also trigger on page load (for Astro)
+    initReveals();
+  </script>
+</Base>

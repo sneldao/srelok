@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Custom Properties --- */
+:root {
+  --color-bg: #0a0a0f;
+  --color-surface: #12121a;
+  --color-border: #1e1e2e;
+  --color-text: #e4e4ed;
+  --color-text-muted: #6b6b80;
+  --color-accent: #7c5cff;
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-error: #ef4444;
+
+  /* Chain colors */
+  --chain-ethereum: #627eea;
+  --chain-base: #0052ff;
+  --chain-arbitrum: #28a0f0;
+  --chain-optimism: #ff0420;
+  --chain-gnosis: #04795b;
+  --chain-avalanche: #e84142;
+  --chain-polygon: #8247e5;
+  --chain-linea: #61dfff;
+  --chain-celo: #fcff52;
+  --chain-zksync: #8c8dfc;
+
+  /* Typography */
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --font-sans: "Space Grotesk", "Inter", system-ui, sans-serif;
+
+  /* Spacing rhythm */
+  --section-gap: clamp(6rem, 15vh, 12rem);
+
+  /* Ease */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+/* --- Base Reset --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: auto; /* Lenis handles smooth scroll */
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Lenis */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* --- Typography Scale --- */
+h1, .h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+h2, .h2 {
+  font-family: var(--font-sans);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h3, .h3 {
+  font-family: var(--font-sans);
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+p, .body {
+  font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  letter-spacing: -0.02em;
+}
+
+/* --- Utility Classes --- */
+.section {
+  padding: var(--section-gap) 0;
+  position: relative;
+}
+
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(1.5rem, 4vw, 4rem);
+}
+
+/* Reveal masks (used by GSAP SplitText) */
+.line {
+  overflow: hidden;
+}
+
+.char {
+  display: inline-block;
+}
+
+/* Chain badge */
+.chain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.chain-badge--base { border-color: var(--chain-base); color: var(--chain-base); }
+.chain-badge--arbitrum { border-color: var(--chain-arbitrum); color: var(--chain-arbitrum); }
+.chain-badge--optimism { border-color: var(--chain-optimism); color: var(--chain-optimism); }
+.chain-badge--gnosis { border-color: var(--chain-gnosis); color: var(--chain-gnosis); }
+.chain-badge--ethereum { border-color: var(--chain-ethereum); color: var(--chain-ethereum); }
+.chain-badge--linea { border-color: var(--chain-linea); color: var(--chain-linea); }
+.chain-badge--celo { border-color: var(--chain-celo); color: var(--chain-celo); }
+
+/* Status indicator */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot--pending { background: var(--color-warning); }
+.status-dot--submitted { background: var(--chain-base); }
+.status-dot--accepted { background: var(--color-success); }
+.status-dot--challenged { background: var(--color-error); }
+
+/* Canvas overlay */
+#scene-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Content sits above canvas */
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent);
+  color: white;
+}

@@ -1,0 +1,120 @@
+---
+/**
+ * Scene 1: Hero — The Agent's Pulse
+ *
+ * Minimal dark environment with Three.js particle field behind.
+ * Headline animates in char-by-char. Stats counter below.
+ */
+---
+
+<section class="hero section" id="hero">
+  <div class="container hero__inner">
+    <div class="hero__badge">
+      <span class="status-dot status-dot--accepted"></span>
+      <span class="mono">agent online</span>
+    </div>
+
+    <h1 class="hero__title" data-reveal="heading">
+      Curating the decentralized web
+    </h1>
+
+    <p class="hero__subtitle" data-reveal="paragraph">
+      An autonomous AI agent discovering, validating, and submitting on-chain metadata to Kleros Scout registries — earning PNK rewards across 12 chains.
+    </p>
+
+    <div class="hero__stats" data-reveal="group">
+      <div class="hero__stat" data-reveal="group-item">
+        <span class="hero__stat-value" data-reveal="counter" data-target="0">0</span>
+        <span class="hero__stat-label">submissions</span>
+      </div>
+      <div class="hero__stat" data-reveal="group-item">
+        <span class="hero__stat-value" data-reveal="counter" data-target="12">0</span>
+        <span class="hero__stat-label">chains</span>
+      </div>
+      <div class="hero__stat" data-reveal="group-item">
+        <span class="hero__stat-value" data-reveal="counter" data-target="4">0</span>
+        <span class="hero__stat-label">registries</span>
+      </div>
+      <div class="hero__stat" data-reveal="group-item">
+        <span class="hero__stat-value mono" data-reveal="counter" data-target="0">0</span>
+        <span class="hero__stat-label">PNK earned</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding-top: 10vh;
+  }
+
+  .hero__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.8rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 100px;
+    width: fit-content;
+    opacity: 0;
+    animation: fadeIn 0.6s ease-out 0.5s forwards;
+  }
+
+  .hero__title {
+    max-width: 900px;
+  }
+
+  .hero__subtitle {
+    max-width: 600px;
+    margin-top: 0.5rem;
+  }
+
+  .hero__stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .hero__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .hero__stat-value {
+    font-family: var(--font-mono);
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .hero__stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  @media (max-width: 768px) {
+    .hero__stats {
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+  }
+</style>

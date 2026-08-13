@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/kleros-scout/daemon/api"
+	"github.com/kleros-scout/daemon/db"
+	"github.com/kleros-scout/daemon/scheduler"
 	"github.com/kleros-scout/daemon/ws"
 )
 
@@ -19,9 +21,17 @@ func main() {
 		port = "8080"
 	}
 
+	// Initialize database
+	db.Init()
+	defer db.Close()
+
 	// WebSocket hub
 	hub := ws.NewHub()
 	go hub.Run()
+
+	// Scheduler
+	sched := scheduler.New(hub)
+	go sched.Start()
 
 	// HTTP router
 	mux := http.NewServeMux()
@@ -33,6 +43,7 @@ func main() {
 	mux.HandleFunc("GET /api/candidates", api.CandidatesHandler)
 	mux.HandleFunc("POST /api/candidates/{id}/approve", api.ApproveHandler)
 	mux.HandleFunc("POST /api/candidates/{id}/reject", api.RejectHandler)
+	mux.HandleFunc("GET /api/logs", api.LogsHandler)
 	mux.HandleFunc("POST /api/discover", api.DiscoverHandler)
 	mux.HandleFunc("GET /api/feed", api.FeedHandler(hub))
 
@@ -59,7 +70,10 @@ func main() {
 
 	// Graceful shutdown
 	go func() {
-		log.Printf("Kleros Scout daemon listening on :%s", port)
+		log.Printf("╔══════════════════════════════════════╗")
+		log.Printf("║   Kleros Scout Daemon v0.1.0        ║")
+		log.Printf("║   Port: %s                          ║", port)
+		log.Printf("╚══════════════════════════════════════╝")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server error: %v", err)
 		}
@@ -70,6 +84,7 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down...")
+	sched.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	srv.Shutdown(ctx)

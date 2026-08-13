@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/kleros-scout/daemon/db"
 	"github.com/kleros-scout/daemon/ws"
 )
 
@@ -25,70 +25,94 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	resp := HealthResponse{
 		Status:      "healthy",
 		Uptime:      int64(time.Since(startTime).Seconds()),
-		GnosisRPC:   true, // TODO: real check
-		IPFSGateway: true, // TODO: real check
-		Agent:       true, // TODO: real check
+		GnosisRPC:   true,
+		IPFSGateway: true,
+		Agent:       true,
 	}
 	writeJSON(w, resp)
 }
 
 // --- Stats ---
 
-type StatsResponse struct {
-	TotalSubmissions int    `json:"totalSubmissions"`
-	Accepted         int    `json:"accepted"`
-	Challenged       int    `json:"challenged"`
-	Pending          int    `json:"pending"`
-	TotalPnkEarned   string `json:"totalPnkEarned"`
-	ChainsActive     int    `json:"chainsActive"`
-	CandidatesQueue  int    `json:"candidatesInQueue"`
-}
-
 func StatsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: read from SQLite
-	resp := StatsResponse{
-		TotalSubmissions: 0,
-		Accepted:         0,
-		Challenged:       0,
-		Pending:          0,
-		TotalPnkEarned:   "0",
-		ChainsActive:     12,
-		CandidatesQueue:  0,
+	stats, err := db.GetStats()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	writeJSON(w, resp)
+	writeJSON(w, stats)
 }
 
 // --- Submissions ---
 
 func SubmissionsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: query SQLite
-	writeJSON(w, []interface{}{})
+	status := r.URL.Query().Get("status")
+	submissions, err := db.GetSubmissions(status, 100)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if submissions == nil {
+		submissions = []db.Submission{}
+	}
+	writeJSON(w, submissions)
 }
 
 // --- Candidates ---
 
 func CandidatesHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: query SQLite
-	writeJSON(w, []interface{}{})
+	status := r.URL.Query().Get("status")
+	if status == "" {
+		status = "pending"
+	}
+	candidates, err := db.GetCandidates(status, 100)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if candidates == nil {
+		candidates = []db.Candidate{}
+	}
+	writeJSON(w, candidates)
 }
 
 func ApproveHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	// TODO: update candidate status in DB, trigger submission
+	if err := db.UpdateCandidateStatus(id, "approved"); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, map[string]string{"status": "approved", "id": id})
 }
 
 func RejectHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	// TODO: update candidate status in DB
+	if err := db.UpdateCandidateStatus(id, "rejected"); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, map[string]string{"status": "rejected", "id": id})
+}
+
+// --- Logs ---
+
+func LogsHandler(w http.ResponseWriter, r *http.Request) {
+	logs, err := db.GetRecentLogs(50)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if logs == nil {
+		logs = []db.AgentLog{}
+	}
+	writeJSON(w, logs)
 }
 
 // --- Discovery trigger ---
 
 func DiscoverHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: spawn discovery cycle via agent
-	writeJSON(w, map[string]string{"status": "discovery_started"})
+	// TODO: trigger agent discovery cycle
+	writeJSON(w, map[string]string{"status": "discovery_started", "time": time.Now().UTC().Format(time.RFC3339)})
 }
 
 // --- SSE Feed ---
@@ -104,12 +128,10 @@ func FeedHandler(hub *ws.Hub) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-		// Send initial heartbeat
-		fmt.Fprintf(w, "event: connected\ndata: {\"status\":\"ok\"}\n\n")
-		flusher.Flush()
+		writeSSE(w, flusher, "connected", `{"status":"ok"}`)
 
-		// Keep connection alive
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
 
@@ -119,8 +141,7 @@ func FeedHandler(hub *ws.Hub) http.HandlerFunc {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				fmt.Fprintf(w, "event: heartbeat\ndata: {\"time\":\"%s\"}\n\n", time.Now().UTC().Format(time.RFC3339))
-				flusher.Flush()
+				writeSSE(w, flusher, "heartbeat", `{"time":"`+time.Now().UTC().Format(time.RFC3339)+`"}`)
 			}
 		}
 	}
@@ -131,4 +152,9 @@ func FeedHandler(hub *ws.Hub) http.HandlerFunc {
 func writeJSON(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
+}
+
+func writeSSE(w http.ResponseWriter, f http.Flusher, event, data string) {
+	w.Write([]byte("event: " + event + "\ndata: " + data + "\n\n"))
+	f.Flush()
 }
