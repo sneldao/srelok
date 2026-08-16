@@ -4,14 +4,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Space Grotesk"', "system-ui", "sans-serif"],
-        mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
+        sans: ['"Syne"', "system-ui", "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
       },
       colors: {
-        bg: "#0a0a0f",
-        surface: "#12121a",
-        border: "#1e1e2e",
-        accent: "#7c5cff",
+        bg: "#0b0d0b",
+        surface: "#131615",
+        border: "#252c26",
+        accent: "#3dffa0",
       },
     },
   },

@@ -94,36 +94,36 @@ const connections = [
 
 <script>
   import gsap from "gsap";
-  import { ScrollTrigger } from "gsap/ScrollTrigger";
+  import { prefersReducedMotion } from "../lib/gsap/init";
 
-  // Animate chain nodes on scroll
   const nodes = document.querySelectorAll(".chainmap__node");
-  const connections = document.querySelector(".chainmap__connections");
 
-  gsap.fromTo(
-    nodes,
-    { scale: 0, transformOrigin: "center" },
-    {
-      scale: 1,
-      duration: 0.6,
-      stagger: 0.08,
-      ease: "back.out(1.7)",
-      scrollTrigger: {
-        trigger: ".chainmap__svg",
-        start: "top 75%",
-        once: true,
-      },
-    }
-  );
+  if (!prefersReducedMotion()) {
+    gsap.fromTo(
+      nodes,
+      { scale: 0.85, autoAlpha: 0, transformOrigin: "center" },
+      {
+        scale: 1,
+        autoAlpha: 1,
+        duration: 0.45,
+        stagger: 0.05,
+        ease: "expo.out",
+        scrollTrigger: {
+          trigger: ".chainmap__svg",
+          start: "top 75%",
+          once: true,
+        },
+      }
+    );
 
-  // Pulse animation on glow circles (continuous, subtle)
-  gsap.to(".chainmap__glow", {
-    r: 4.5,
-    opacity: 0.05,
-    duration: 2,
-    stagger: { each: 0.2, repeat: -1, yoyo: true },
-    ease: "sine.inOut",
-  });
+    gsap.to(".chainmap__glow", {
+      attr: { r: 4.5 },
+      opacity: 0.05,
+      duration: 2,
+      stagger: { each: 0.2, repeat: -1, yoyo: true },
+      ease: "sine.inOut",
+    });
+  }
 </script>
 
 <style>
@@ -142,7 +142,9 @@ const connections = [
 
   .chainmap__node {
     cursor: default;
-    transition: opacity 0.3s;
+    transition-property: opacity;
+    transition-duration: 180ms;
+    transition-timing-function: var(--ease-out);
   }
 
   .chainmap__node:hover .chainmap__glow {

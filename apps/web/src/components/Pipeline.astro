@@ -12,42 +12,36 @@ const stages = [
     label: "DISCOVER",
     description: "Scanning eligible chains for untagged contracts",
     detail: "Checking Base, Arbitrum, Linea, Celo...",
-    icon: "🔍",
   },
   {
     id: "research",
     label: "RESEARCH",
     description: "Identifying what this contract does",
     detail: "Source code analysis, deployer lookup, project identification",
-    icon: "🧠",
   },
   {
     id: "evaluate",
     label: "EVALUATE",
     description: "Policy compliance check",
     detail: "Explorer tag status: NOT TAGGED. Policy: PASS.",
-    icon: "✓",
   },
   {
     id: "build",
     label: "BUILD",
     description: "Constructing item.json payload",
     detail: "MetaEvidence cross-check, CAIP-10 address format",
-    icon: "⚙",
   },
   {
     id: "submit",
     label: "SUBMIT",
     description: "Upload to IPFS → addItem on-chain",
     detail: "Deposit: 51.6 xDAI (returned if accepted)",
-    icon: "→",
   },
   {
     id: "track",
     label: "TRACK",
     description: "Monitor challenge window",
     detail: "84h challenge period. Respond if challenged.",
-    icon: "◎",
   },
 ];
 ---
@@ -65,7 +59,6 @@ const stages = [
       {stages.map((stage, i) => (
         <div class="pipeline__stage" data-reveal="element" data-stage={stage.id}>
           <div class="pipeline__stage-number mono">{String(i + 1).padStart(2, "0")}</div>
-          <div class="pipeline__stage-icon">{stage.icon}</div>
           <div class="pipeline__stage-content">
             <h3 class="pipeline__stage-label mono">{stage.label}</h3>
             <p class="pipeline__stage-desc">{stage.description}</p>
@@ -102,8 +95,8 @@ const stages = [
 
   .pipeline__stage {
     display: grid;
-    grid-template-columns: 3rem 2.5rem 1fr;
-    gap: 1rem;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 1.25rem;
     align-items: start;
     padding: 2rem 0;
     border-bottom: 1px solid var(--color-border);
@@ -116,21 +109,9 @@ const stages = [
   }
 
   .pipeline__stage-number {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    padding-top: 0.2rem;
-  }
-
-  .pipeline__stage-icon {
-    font-size: 1.2rem;
-    width: 2.5rem;
-    height: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
+    color: var(--color-accent);
+    font-size: 0.8rem;
+    padding-top: 0.35rem;
   }
 
   .pipeline__stage-content {
@@ -142,7 +123,7 @@ const stages = [
   .pipeline__stage-label {
     font-size: 0.8rem;
     letter-spacing: 0.1em;
-    color: var(--color-accent);
+    color: var(--color-text);
   }
 
   .pipeline__stage-desc {
@@ -156,17 +137,17 @@ const stages = [
     color: var(--color-text-muted);
     padding: 0.4rem 0.6rem;
     background: var(--color-bg);
-    border-radius: 4px;
+    border-radius: var(--radius-inner);
     width: fit-content;
     margin-top: 0.25rem;
   }
 
   @media (max-width: 768px) {
     .pipeline__stage {
-      grid-template-columns: 2rem 1fr;
+      grid-template-columns: 2.5rem 1fr;
     }
     .pipeline__stage-number {
-      display: none;
+      padding-top: 0.2rem;
     }
   }
 </style>

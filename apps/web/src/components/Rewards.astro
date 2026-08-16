@@ -10,7 +10,7 @@ const registries = [
   { key: "atr", label: "Address Tags", pool: "100,000", color: "var(--chain-base)" },
   { key: "tokens", label: "Token Registry", pool: "100,000", color: "var(--chain-arbitrum)" },
   { key: "cdn", label: "Contract Domains", pool: "100,000", color: "var(--chain-gnosis)" },
-  { key: "atq", label: "Tag Queries", pool: "60,000", color: "var(--color-accent)" },
+  { key: "atq", label: "Tag Queries", pool: "60,000", color: "var(--chain-celo)" },
 ];
 ---
 
@@ -19,7 +19,7 @@ const registries = [
     <div class="rewards__header">
       <span class="rewards__label mono" data-reveal="element">TOTAL EARNED</span>
       <div class="rewards__total">
-        <span class="rewards__amount" data-reveal="counter" data-target="0" id="total-pnk">0</span>
+        <span class="rewards__amount tabular" data-reveal="counter" data-target="0" id="total-pnk">0</span>
         <span class="rewards__unit" data-reveal="element">PNK</span>
       </div>
       <p class="rewards__note" data-reveal="paragraph">
@@ -98,6 +98,7 @@ const registries = [
     font-family: var(--font-mono);
     font-size: clamp(3rem, 8vw, 6rem);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     color: var(--color-text);
     line-height: 1;
   }
@@ -106,6 +107,7 @@ const registries = [
     font-family: var(--font-mono);
     font-size: 1.5rem;
     color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
   }
 
   .rewards__note {
@@ -124,7 +126,7 @@ const registries = [
     padding: 1.5rem;
     background: var(--color-bg);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: var(--radius-panel);
   }
 
   .rewards__registry-header {
@@ -155,7 +157,9 @@ const registries = [
   .rewards__bar-fill {
     height: 100%;
     border-radius: 2px;
-    transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-property: width;
+    transition-duration: 1.2s;
+    transition-timing-function: var(--ease-out-expo);
   }
 
   .rewards__registry-stats {
@@ -174,7 +178,7 @@ const registries = [
   .rewards__info-card {
     padding: 1.25rem;
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: var(--radius-panel);
     display: flex;
     flex-direction: column;
     gap: 0.3rem;

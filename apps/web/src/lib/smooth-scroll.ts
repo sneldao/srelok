@@ -5,14 +5,16 @@
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { prefersReducedMotion } from "./gsap/init";
+
+const reduced = prefersReducedMotion();
 
 const lenis = new Lenis({
-  duration: 1.2,
-  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // expo.out approximation
+  duration: reduced ? 0 : 1.2,
+  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
   touchMultiplier: 2,
 });
 
-// Sync Lenis with GSAP ScrollTrigger
 lenis.on("scroll", ScrollTrigger.update);
 
 gsap.ticker.add((time) => {

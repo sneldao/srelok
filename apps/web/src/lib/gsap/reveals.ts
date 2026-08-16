@@ -1,31 +1,10 @@
 /**
  * Reveal animation system using free GSAP plugins only.
  *
- * Text splitting is done manually via span wrapping.
- * ScrollTrigger drives all reveal timing.
+ * Marketing reveals stay ~0.8–1s. Interactive surfaces do not use this file.
  */
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-/**
- * Split text into chars wrapped in spans for animation.
- */
-function splitChars(el: HTMLElement): HTMLSpanElement[] {
-  const text = el.textContent || "";
-  el.innerHTML = "";
-  const chars: HTMLSpanElement[] = [];
-
-  for (const char of text) {
-    const span = document.createElement("span");
-    span.className = "char";
-    span.style.display = "inline-block";
-    span.style.overflow = "hidden";
-    span.textContent = char === " " ? "\u00A0" : char;
-    el.appendChild(span);
-    chars.push(span);
-  }
-  return chars;
-}
+import { prefersReducedMotion } from "./init";
 
 /**
  * Split text into words wrapped in overflow-hidden containers.
@@ -57,6 +36,12 @@ function splitWords(el: HTMLElement): HTMLSpanElement[] {
   return containers;
 }
 
+function showImmediately(selector: string) {
+  document.querySelectorAll(selector).forEach((el) => {
+    gsap.set(el, { clearProps: "all", autoAlpha: 1, y: 0, yPercent: 0 });
+  });
+}
+
 /**
  * Reveal headings word-by-word with y-translate from below.
  */
@@ -66,7 +51,7 @@ export function revealHeadings() {
 
     gsap.from(words, {
       yPercent: 110,
-      duration: 1,
+      duration: 0.9,
       stagger: 0.04,
       ease: "expo.out",
       scrollTrigger: {
@@ -85,11 +70,11 @@ export function revealParagraphs() {
   document.querySelectorAll("[data-reveal='paragraph']").forEach((el) => {
     gsap.fromTo(
       el,
-      { y: 30, autoAlpha: 0 },
+      { y: 24, autoAlpha: 0 },
       {
         y: 0,
         autoAlpha: 1,
-        duration: 0.9,
+        duration: 0.7,
         ease: "expo.out",
         scrollTrigger: {
           trigger: el,
@@ -108,11 +93,11 @@ export function revealElements() {
   document.querySelectorAll("[data-reveal='element']").forEach((el) => {
     gsap.fromTo(
       el,
-      { yPercent: 30, autoAlpha: 0 },
+      { y: 28, autoAlpha: 0 },
       {
-        yPercent: 0,
+        y: 0,
         autoAlpha: 1,
-        duration: 0.8,
+        duration: 0.7,
         ease: "power3.out",
         scrollTrigger: {
           trigger: el,
@@ -132,13 +117,13 @@ export function revealGroups() {
     const items = group.querySelectorAll("[data-reveal='group-item']");
     gsap.fromTo(
       items,
-      { yPercent: 50, autoAlpha: 0 },
+      { y: 32, autoAlpha: 0 },
       {
-        yPercent: 0,
+        y: 0,
         autoAlpha: 1,
-        duration: 0.8,
+        duration: 0.65,
         ease: "power3.out",
-        stagger: 0.1,
+        stagger: 0.08,
         scrollTrigger: {
           trigger: group,
           start: "top 85%",
@@ -161,8 +146,8 @@ export function revealCounters() {
 
     gsap.to(obj, {
       value: target,
-      duration: 2.5,
-      ease: "steps(14)",
+      duration: 1.6,
+      ease: "steps(12)",
       scrollTrigger: {
         trigger: el,
         start: "top 80%",
@@ -179,6 +164,15 @@ export function revealCounters() {
  * Initialize all reveals.
  */
 export function initReveals() {
+  if (prefersReducedMotion()) {
+    showImmediately("[data-reveal]");
+    document.querySelectorAll("[data-reveal='counter']").forEach((el) => {
+      const target = (el as HTMLElement).dataset.target;
+      if (target) (el as HTMLElement).textContent = Number(target).toLocaleString();
+    });
+    return;
+  }
+
   revealHeadings();
   revealParagraphs();
   revealElements();

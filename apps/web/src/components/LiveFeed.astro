@@ -30,6 +30,7 @@
 
 <script>
   import gsap from "gsap";
+  import { prefersReducedMotion } from "../lib/gsap/init";
 
   const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
   const feedList = document.getElementById("feed-list");
@@ -85,15 +86,19 @@
       </div>
     `;
 
-    // Animate in
-    gsap.set(el, { autoAlpha: 0, y: 20 });
-
-    // Remove empty state
     const empty = feedList?.querySelector(".feed__empty");
     if (empty) empty.remove();
 
     feedList?.prepend(el);
-    gsap.to(el, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" });
+    if (prefersReducedMotion()) {
+      gsap.set(el, { autoAlpha: 1, y: 0 });
+    } else {
+      gsap.fromTo(
+        el,
+        { autoAlpha: 0, y: 8 },
+        { autoAlpha: 1, y: 0, duration: 0.2, ease: "power2.out" }
+      );
+    }
 
     // Keep max 20 entries
     const entries = feedList?.querySelectorAll(".feed__entry");

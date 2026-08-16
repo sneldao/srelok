@@ -113,7 +113,7 @@ export function createChainScene(canvas: HTMLCanvasElement) {
   }
 
   // --- Animation loop ---
-  let animationId: number;
+  let animationId = 0;
   const clock = new THREE.Clock();
 
   function animate() {
@@ -136,7 +136,11 @@ export function createChainScene(canvas: HTMLCanvasElement) {
     renderer.render(scene, camera);
   }
 
-  animate();
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    renderer.render(scene, camera);
+  } else {
+    animate();
+  }
 
   // --- Resize ---
   function onResize() {

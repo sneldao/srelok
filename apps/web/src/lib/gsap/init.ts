@@ -9,10 +9,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Default ease for the whole site
 gsap.defaults({
   ease: "expo.out",
-  duration: 1,
 });
+
+export function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export { gsap, ScrollTrigger };
