@@ -1,0 +1,3 @@
+/opt/srelok/**
+user=root
+restart=always

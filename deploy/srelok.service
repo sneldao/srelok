@@ -1,0 +1,28 @@
+[Unit]
+# Srelok daemon — Kleros Scout AI curation agent
+Description=Srelok daemon (Go API, scheduler, WebSocket, SSE)
+# Start after networking + the TLS reverse proxy (Caddy) is up
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Run under a dedicated non-root user (created on the VPS): adduser --system --group srelok
+User=srelok
+Group=srelok
+WorkingDirectory=/opt/srelok
+# Secrets/env are loaded from this file (see deploy/README.md); git-ignored
+EnvironmentFile=/opt/srelok/.env
+ExecStart=/opt/srelok/apps/daemon/srelok
+Restart=always
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/srelok/data
+
+[Install]
+WantedBy=multi-user.target
