@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/kleros-scout/daemon/db"
@@ -18,6 +19,9 @@ type Scheduler struct {
 	interval time.Duration
 	stop     chan struct{}
 	chains   []string
+
+	mu      sync.Mutex
+	running bool
 }
 
 func New(hub *ws.Hub) *Scheduler {
@@ -46,7 +50,7 @@ func (s *Scheduler) Start() {
 
 	// Run first cycle after a short delay
 	time.Sleep(5 * time.Second)
-	s.runCycle()
+	s.TryTrigger()
 
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
@@ -54,12 +58,37 @@ func (s *Scheduler) Start() {
 	for {
 		select {
 		case <-ticker.C:
-			s.runCycle()
+			s.TryTrigger()
 		case <-s.stop:
 			log.Println("Scheduler stopped")
 			return
 		}
 	}
+}
+
+// TryTrigger runs a discovery cycle asynchronously unless one is already in
+// progress. It returns true if a cycle was actually started. Exposed so the
+// daemon's POST /api/discover endpoint can kick off a cycle on demand, and
+// used internally to avoid overlapping scheduled cycles.
+func (s *Scheduler) TryTrigger() bool {
+	s.mu.Lock()
+	if s.running {
+		s.mu.Unlock()
+		return false
+	}
+	s.running = true
+	s.mu.Unlock()
+
+	go func() {
+		defer func() {
+			s.mu.Lock()
+			s.running = false
+			s.mu.Unlock()
+		}()
+		s.runCycle()
+	}()
+
+	return true
 }
 
 func (s *Scheduler) Stop() {

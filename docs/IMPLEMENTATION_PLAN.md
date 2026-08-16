@@ -390,56 +390,56 @@ CREATE TABLE rewards (
 
 ### Phase 1: Foundation (Days 1-3)
 
-- [ ] Set up monorepo structure: `apps/web` (Astro), `apps/daemon` (Go), `packages/agent` (LangGraph), `packages/pipeline` (existing TS)
-- [ ] Initialize Astro project with Tailwind, GSAP, Lenis, Swup
-- [ ] Initialize Go module with basic HTTP server + WebSocket
-- [ ] Set up SQLite schema and migration
-- [ ] Move existing pipeline into `packages/pipeline` as a library
+- [x] Set up monorepo structure: `apps/web` (Astro), `apps/daemon` (Go), `packages/agent` (LangGraph), `packages/pipeline` (existing TS)
+- [x] Initialize Astro project with Tailwind, GSAP, Lenis, Swup
+- [x] Initialize Go module with basic HTTP server + WebSocket
+- [x] Set up SQLite schema and migration
+- [x] Move existing pipeline into `packages/pipeline` as a library
 
 ### Phase 2: Go Daemon (Days 3-5)
 
-- [ ] Scheduler (cron-based discovery triggers)
-- [ ] REST API endpoints (submissions, candidates, stats)
-- [ ] SSE event stream for live feed
-- [ ] WebSocket handler for operator controls
-- [ ] Agent process spawner (runs LangGraph via `tsx`)
-- [ ] Health monitoring (RPC, IPFS gateway)
+- [x] Scheduler (cron-based discovery triggers)
+- [x] REST API endpoints (submissions, candidates, stats)
+- [x] SSE event stream for live feed
+- [x] WebSocket handler for operator controls
+- [ ] Agent process spawner (runs LangGraph via `tsx`) — *currently spawns the pipeline `discover.ts`; LangGraph agent not yet wired into the daemon*
+- [ ] Health monitoring (RPC, IPFS gateway) — *health endpoint exists but hardcodes statuses; real probing of RPC/gateway pending*
 
 ### Phase 3: LangGraph Agent (Days 5-8)
 
-- [ ] Define state graph (nodes, edges, conditional routing)
-- [ ] Implement RESEARCH node (web search + source analysis)
-- [ ] Implement EVALUATE node (policy compliance LLM check)
-- [ ] Implement BUILD node (naming with LLM + seed template)
-- [ ] Human-in-the-loop gate (WebSocket approval channel)
-- [ ] Auto-approve logic (confidence threshold)
+- [x] Define state graph (nodes, edges, conditional routing)
+- [x] Implement RESEARCH node (web search + source analysis)
+- [x] Implement EVALUATE node (policy compliance LLM check)
+- [x] Implement BUILD node (naming with LLM + seed template)
+- [x] Human-in-the-loop gate (WebSocket approval channel) — *also exposed via REST approve/reject endpoints; WS handler now applies decisions*
+- [x] Auto-approve logic (confidence threshold)
 - [ ] Persistent state (checkpointer → SQLite)
 
 ### Phase 4: Frontend — Structure (Days 8-10)
 
-- [ ] Astro project structure (layouts, pages, islands)
-- [ ] Scene 1: Hero with Three.js particle environment
-- [ ] Scene 2: Pipeline flow (scroll-driven reveal)
-- [ ] Scene 3: Live feed (SSE-connected)
-- [ ] Reveal system (SplitText, scroll-triggered animations)
-- [ ] Lenis smooth scroll integration
-- [ ] Dark theme, chain color system, typography scale
+- [x] Astro project structure (layouts, pages, islands)
+- [x] Scene 1: Hero with Three.js particle environment
+- [x] Scene 2: Pipeline flow (scroll-driven reveal)
+- [x] Scene 3: Live feed (SSE-connected)
+- [x] Reveal system (SplitText, scroll-triggered animations)
+- [x] Lenis smooth scroll integration
+- [x] Dark theme, chain color system, typography scale
 
 ### Phase 5: Frontend — Polish (Days 10-13)
 
-- [ ] Scene 4: Chain map visualization
-- [ ] Scene 5: Rewards counter
-- [ ] Scene 6: Operator controls island
-- [ ] Page transitions with Swup + Flip
+- [x] Scene 4: Chain map visualization
+- [x] Scene 5: Rewards counter
+- [x] Scene 6: Operator controls island
+- [x] Page transitions with Swup + Flip
 - [ ] Submission detail page (card → page morph)
 - [ ] Responsive design (mobile-optimized, reduced motion)
 - [ ] Performance: KTX2 textures if 3D heavy, lazy islands
 
 ### Phase 6: Integration & Deploy (Days 13-15)
 
-- [ ] Wire Go daemon → LangGraph → pipeline end-to-end
-- [ ] Deploy to VPS (Go binary + Astro static output)
-- [ ] TLS certificate (Let's Encrypt)
+- [ ] Wire Go daemon → LangGraph → pipeline end-to-end — *daemon → pipeline discovery wired; LangGraph agent not yet invoked by the daemon*
+- [x] Deploy to VPS (Go binary + Astro static output) — *backend live at http://144.202.117.160:3201, frontend auto-deployed via Netlify*
+- [ ] TLS certificate (Let's Encrypt) — *backend still on plain HTTP / raw IP*
 - [ ] Systemd service for Go daemon
 - [ ] First live discovery cycle
 - [ ] Monitoring / alerting (uptime, RPC health)
@@ -447,11 +447,23 @@ CREATE TABLE rewards (
 ### Phase 7: Hackathon Submission (Days 15-16)
 
 - [ ] Record demo video (screen recording of the full experience)
-- [ ] Push to public GitHub repo
-- [ ] Write comprehensive README with Kiro usage highlighted
-- [ ] Ensure `.kiro/` directory is in the repo
+- [x] Push to public GitHub repo — *https://github.com/sneldao/srelok*
+- [x] Write comprehensive README with Kiro usage highlighted
+- [x] Ensure `.kiro/` directory is in the repo
 - [ ] Submit via Google Form
 
+## Progress Status (updated 2026-08-16)
+
+Phases 1–5 are effectively complete and the architecture is deployed (frontend auto-deploys via Netlify; the Go daemon is live at `http://144.202.117.160:3201`). Remaining before submission:
+
+1. **Finish the loop (pipeline)** — challenge-window tracking & compliance checks (`src/challenge/`), on-chain/registry "already present" check in `src/submit/validate.ts`, ERC-20/721/1167 exclusion detection, real MetaEvidence column fetch in `build-payload.ts`.
+2. **Wiring** — invoke the LangGraph agent from the Go daemon (today the daemon spawns the pipeline's `discover.ts`), plus real RPC/gateway health probing.
+3. **Ops** — TLS for the VPS backend, a systemd unit, and uptime/RPC monitoring.
+4. **Submission artifacts** — record the demo video and fill the Google Form.
+
+> Note: `POST /api/discover` now triggers a real discovery cycle, and the WebSocket handler applies operator approve/reject decisions — the human-in-the-loop gate is wired end-to-end (both WS and REST).
+
+---
 ---
 
 ## What Makes This Win

@@ -1,10 +1,13 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/kleros-scout/daemon/db"
 	"golang.org/x/net/websocket"
 )
 
@@ -94,14 +97,49 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 			// Reader (keeps connection alive, handles incoming messages)
 			buf := make([]byte, 1024)
 			for {
-				_, err := conn.Read(buf)
+				n, err := conn.Read(buf)
 				if err != nil {
 					hub.unregister <- client
 					break
 				}
-				// TODO: handle incoming messages (approve/reject from operator)
+				handleMessage(hub, buf[:n])
 			}
 		},
 	}
 	s.ServeHTTP(w, r)
+}
+
+// operatorMessage is the JSON shape the operator UI sends over the socket.
+type operatorMessage struct {
+	Type string `json:"type"` // "approve" | "reject"
+	ID   string `json:"id"`   // candidate ID
+}
+
+// handleMessage processes an inbound WebSocket message. It currently supports
+// operator approve/reject actions on pending candidates (human-in-the-loop
+// gate), persisting the decision and broadcasting a confirmation to the feed.
+func handleMessage(hub *Hub, raw []byte) {
+	var msg operatorMessage
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		log.Printf("WS ignoring malformed message: %v", err)
+		return
+	}
+
+	switch msg.Type {
+	case "approve", "reject":
+		if msg.ID == "" {
+			return
+		}
+		if err := db.UpdateCandidateStatus(msg.ID, msg.Type); err != nil {
+			log.Printf("WS %s %s failed: %v", msg.Type, msg.ID, err)
+			return
+		}
+		evt, _ := json.Marshal(map[string]string{
+			"type":      "candidate_reviewed",
+			"id":        msg.ID,
+			"status":    msg.Type,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+		hub.Broadcast(evt)
+	}
 }

@@ -168,6 +168,10 @@ Examples:
   log.info("\n[3/5] Uploading item.json to IPFS...");
 
   const jsonBytes = Buffer.from(JSON.stringify(itemJson), "utf-8");
+  // Captured from the upload step and passed through to the on-chain submission.
+  let uploadCid: string | undefined;
+  let liveTxHash: string | undefined;
+  let liveItemId: string | undefined;
 
   if (dryRun) {
     const check = await dryRunUpload(jsonBytes, "item.json", "evidence");
@@ -179,6 +183,7 @@ Examples:
     }
   } else {
     const upload = await uploadJsonToIPFS(itemJson, "item.json", "evidence");
+    uploadCid = upload.cid;
     log.info(`✓ Uploaded: ${upload.cid}`);
     log.info(`  URL: ${upload.url}`);
   }
@@ -208,10 +213,21 @@ Examples:
     log.info(`DRY RUN COMPLETE — no funds spent`);
     log.info(`══════════════════════════════════════`);
   } else {
-    // Real submission
-    // const result = await submitAddItem(registryAddress, upload.cid);
-    // TODO: wire upload.cid from step 3 into this call
-    log.warn("Live submission not yet wired end-to-end (IPFS CID passthrough needed)");
+    // Real submission — pass the IPFS CID from step 3 straight into addItem.
+    if (!uploadCid) {
+      log.error("Cannot submit: no IPFS CID produced by the upload step");
+      process.exit(1);
+    }
+    const result = await submitAddItem(registryAddress, uploadCid);
+    if (!result.success) {
+      log.error(`Submission FAILED: ${result.error || "unknown error"}`);
+      process.exit(1);
+    }
+    liveTxHash = result.txHash;
+    liveItemId = result.itemId;
+    log.info("✓ Submitted on-chain");
+    if (result.txHash) log.info(`  TX: ${result.txHash}`);
+    if (result.itemId) log.info(`  Item ID: ${result.itemId}`);
   }
 
   // Save record
@@ -224,6 +240,9 @@ Examples:
     submittedAt: new Date().toISOString(),
     deposit: `${deposit.totalDeposit}`,
     tag,
+    ipfsCid: uploadCid,
+    txHash: liveTxHash,
+    itemId: liveItemId,
   };
   saveRecord(record);
 }

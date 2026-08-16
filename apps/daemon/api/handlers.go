@@ -110,9 +110,13 @@ func LogsHandler(w http.ResponseWriter, r *http.Request) {
 
 // --- Discovery trigger ---
 
-func DiscoverHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: trigger agent discovery cycle
-	writeJSON(w, map[string]string{"status": "discovery_started", "time": time.Now().UTC().Format(time.RFC3339)})
+// DiscoverHandler kicks off an on-demand discovery cycle. The trigger func
+// is provided by main (wired to the scheduler) to keep this package decoupled.
+func DiscoverHandler(trigger func()) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		trigger()
+		writeJSON(w, map[string]string{"status": "discovery_started", "time": time.Now().UTC().Format(time.RFC3339)})
+	}
 }
 
 // --- SSE Feed ---

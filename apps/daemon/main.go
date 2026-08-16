@@ -44,7 +44,7 @@ func main() {
 	mux.HandleFunc("POST /api/candidates/{id}/approve", api.ApproveHandler)
 	mux.HandleFunc("POST /api/candidates/{id}/reject", api.RejectHandler)
 	mux.HandleFunc("GET /api/logs", api.LogsHandler)
-	mux.HandleFunc("POST /api/discover", api.DiscoverHandler)
+	mux.HandleFunc("POST /api/discover", api.DiscoverHandler(func() { sched.TryTrigger() }))
 	mux.HandleFunc("GET /api/feed", api.FeedHandler(hub))
 
 	// WebSocket
