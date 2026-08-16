@@ -1,8 +1,14 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/kleros-scout/daemon/db"
@@ -21,15 +27,94 @@ type HealthResponse struct {
 	Agent       bool   `json:"agentProcess"`
 }
 
+// HealthHandler probes the services the daemon depends on (Gnosis RPC and the
+// Kleros IPFS gateway) and reports overall status. Services reachable => OK;
+// any failure => "degraded".
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	gnosisOK := checkGnosisRPC()
+	gwOK := checkIPFSGateway()
+
+	status := "healthy"
+	if !gnosisOK || !gwOK {
+		status = "degraded"
+	}
+
 	resp := HealthResponse{
-		Status:      "healthy",
+		Status:      status,
 		Uptime:      int64(time.Since(startTime).Seconds()),
-		GnosisRPC:   true,
-		IPFSGateway: true,
-		Agent:       true,
+		GnosisRPC:   gnosisOK,
+		IPFSGateway: gwOK,
+		// Agent reports whether the agent subsystem is active. True here until
+		// in-flight agent-process tracking is wired into the scheduler.
+		Agent: true,
 	}
 	writeJSON(w, resp)
+}
+
+// checkGnosisRPC verifies the Gnosis RPC by issuing a lightweight
+// eth_blockNumber JSON-RPC call.
+func checkGnosisRPC() bool {
+	rpcURL := os.Getenv("RPC_GNOSIS")
+	if rpcURL == "" {
+		rpcURL = "https://rpc.gnosischain.com"
+	}
+
+	payload := []byte(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, rpcURL, bytes.NewReader(payload))
+	if err != nil {
+		return false
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Gnosis RPC health check failed: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	var out struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return false
+	}
+
+	// A valid block number is a non-zero hex string ("0x...", not "0x0").
+	return len(out.Result) > 3 && out.Result != "0x0"
+}
+
+// checkIPFSGateway verifies the Kleros x402 IPFS gateway is responding.
+func checkIPFSGateway() bool {
+	const gatewayHealthURL = "https://kleros-ipfs-gateway.fly.dev/health"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, gatewayHealthURL, nil)
+	if err != nil {
+		return false
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("IPFS gateway health check failed: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	body, _ := io.ReadAll(resp.Body)
+	return strings.Contains(strings.ToLower(string(body)), "ok")
 }
 
 // --- Stats ---

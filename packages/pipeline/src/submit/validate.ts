@@ -12,6 +12,7 @@
 
 import { getPublicClient, getChain, getRegistry } from "../utils/config.js";
 import { isTaggedOnExplorer } from "../utils/explorer.js";
+import { parseAbi, type Address, type Hex, type PublicClient } from "viem";
 import { log } from "../utils/logger.js";
 
 interface ValidationResult {
@@ -24,8 +25,73 @@ interface ValidationResult {
     notTaggedOnExplorer: boolean;
     notInRegistry: boolean;
     passesExclusions: boolean;
+    contractType: ContractType;
   };
   errors: string[];
+}
+
+interface ContractType {
+  proxy: boolean; // EIP-1167 minimal proxy
+  erc20: boolean;
+  erc721: boolean;
+  erc1155: boolean;
+}
+
+/**
+ * Best-effort on-chain detection of a contract's type via:
+ * - EIP-1167 minimal proxy: canonical initcode preamble in runtime bytecode
+ * - ERC-721 / ERC-1155: ERC-165 `supportsInterface` against the interface IDs
+ * - ERC-20: presence of a readable `decimals()` (best-effort; ERC-20 has no
+ *   standard interface ID, and not all tokens implement `supportsInterface`)
+ *
+ * These types are excluded from ATR incentive rewards but remain valid for
+ * inclusion, so detection is informational rather than disqualifying.
+ */
+async function detectContractType(
+  client: PublicClient,
+  address: Address
+): Promise<ContractType> {
+  const result: ContractType = { proxy: false, erc20: false, erc721: false, erc1155: false };
+
+  try {
+    // EIP-1167 clone preamble: 363d3d373d3d3d363d73
+    const code = await client.getCode({ address });
+    if (code && /^0x363d3d373d3d3d363d73/.test(code)) {
+      result.proxy = true;
+    }
+
+    // Only probe interfaces for non-proxy contracts (proxies forward all calls).
+    if (!result.proxy) {
+      const erc165 = parseAbi([
+        "function supportsInterface(bytes4 interfaceId) external view returns (bool)",
+      ]);
+      const supports = (interfaceId: Hex) =>
+        client
+          .readContract({
+            address,
+            abi: erc165,
+            functionName: "supportsInterface",
+            args: [interfaceId],
+          })
+          .then((v) => v === true)
+          .catch(() => false);
+
+      // ERC-721 / ERC-1155 interface IDs (ERC-165).
+      result.erc721 = await supports("0x80ac58cd");
+      result.erc1155 = await supports("0xd9b67a26");
+
+      // ERC-20: presence of decimals() as a proxy signal.
+      const erc20 = parseAbi(["function decimals() external view returns (uint8)"]);
+      const decimals = await client
+        .readContract({ address, abi: erc20, functionName: "decimals", args: [] })
+        .catch(() => undefined);
+      result.erc20 = decimals !== undefined;
+    }
+  } catch {
+    // Any read failure => unknown type; treat as non-excluded.
+  }
+
+  return result;
 }
 
 export async function validateCandidate(
@@ -65,13 +131,21 @@ export async function validateCandidate(
   // TODO: Query the registry's subgraph or on-chain items
   const notInRegistry = true; // Placeholder
 
-  // 4. Registry-specific exclusion checks
-  let passesExclusions = true;
-  // TODO: For ATR, check if contract is ERC-20/ERC-721/EIP-1167
-  // These are excluded from incentives (but still valid for inclusion)
-  if (registryKey === "addressTags" && registry.excludedTypes) {
-    // Would need to check contract interfaces
-    log.debug("Exclusion check placeholder — needs interface detection");
+  // 4. Registry-specific contract-type / exclusion checks
+  // The detected types (ERC-20/721/1155/EIP-1167) are excluded from ATR
+  // incentive rewards but remain valid for inclusion — so they never
+  // invalidate a candidate, only get reported for the agent's reasoning.
+  const contractType = await detectContractType(client, address as Address);
+  const excludedFromIncentives =
+    registry.excludedTypes !== undefined &&
+    (contractType.proxy || contractType.erc20 || contractType.erc721 || contractType.erc1155);
+  const passesExclusions = true; // excluded from incentives, not from inclusion
+  if (excludedFromIncentives) {
+    log.warn(
+      `Excluded type detected (proxy=${contractType.proxy}, erc20=${contractType.erc20}, erc721=${contractType.erc721}, erc1155=${contractType.erc1155}) — valid, but not incentive-eligible`
+    );
+  } else if (registry.excludedTypes !== undefined) {
+    log.debug("No excluded contract type detected");
   }
 
   const valid =
@@ -87,6 +161,7 @@ export async function validateCandidate(
       notTaggedOnExplorer,
       notInRegistry,
       passesExclusions,
+      contractType,
     },
     errors,
   };

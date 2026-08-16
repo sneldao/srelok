@@ -403,7 +403,7 @@ CREATE TABLE rewards (
 - [x] SSE event stream for live feed
 - [x] WebSocket handler for operator controls
 - [ ] Agent process spawner (runs LangGraph via `tsx`) — *currently spawns the pipeline `discover.ts`; LangGraph agent not yet wired into the daemon*
-- [ ] Health monitoring (RPC, IPFS gateway) — *health endpoint exists but hardcodes statuses; real probing of RPC/gateway pending*
+- [x] Health monitoring (RPC, IPFS gateway) — *GET /api/health probes Gnosis RPC (eth_blockNumber) and the IPFS gateway (/health); reports healthy/degraded*
 
 ### Phase 3: LangGraph Agent (Days 5-8)
 
@@ -456,9 +456,9 @@ CREATE TABLE rewards (
 
 Phases 1–5 are effectively complete and the architecture is deployed (frontend auto-deploys via Netlify; the Go daemon is live at `http://144.202.117.160:3201`). Remaining before submission:
 
-1. **Finish the loop (pipeline)** — challenge-window tracking & compliance checks (`src/challenge/`), on-chain/registry "already present" check in `src/submit/validate.ts`, ERC-20/721/1167 exclusion detection, real MetaEvidence column fetch in `build-payload.ts`.
-2. **Wiring** — invoke the LangGraph agent from the Go daemon (today the daemon spawns the pipeline's `discover.ts`), plus real RPC/gateway health probing.
-3. **Ops** — TLS for the VPS backend, a systemd unit, and uptime/RPC monitoring.
+1. **Finish the loop (pipeline)** — challenge-window tracking & compliance checks (`src/challenge/`), on-chain/registry "already present" check in `src/submit/validate.ts` (needs a subgraph client — an LGTCR `itemID` can't be derived from an address alone). *(ERC-20/721/1155/EIP-1167 detection shipped: `detectContractType` probes bytecode + ERC-165 + `decimals()` and reports the type without disqualifying the candidate.)*
+2. **Wiring** — invoke the LangGraph agent from the Go daemon (today the daemon spawns the pipeline's `discover.ts`).
+3. **Ops** — TLS for the VPS backend and a systemd unit. (Health monitoring is now real: `GET /api/health` probes the Gnosis RPC via `eth_blockNumber` and the IPFS gateway via `/health`, reporting `healthy`/`degraded`.)
 4. **Submission artifacts** — record the demo video and fill the Google Form.
 
 > Note: `POST /api/discover` now triggers a real discovery cycle, and the WebSocket handler applies operator approve/reject decisions — the human-in-the-loop gate is wired end-to-end (both WS and REST).
