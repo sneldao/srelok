@@ -130,24 +130,37 @@ export async function validateCandidate(
     }
   }
 
-  // 3. Check if already in the Scout registry.
-  // Authoritative sources: the scout-api (documented pre-submission research)
-  // and, when configured, the Curate subgraph. Both degrade to "unknown" (null)
-  // on failure — we only block on a positive confirmation of an existing entry.
+  // 3. Duplicate check.
+  // Canonical: Curate subgraph (when SCOUT_SUBGRAPH_URL is set).
+  // Supporting: scout-api Address Tags lookup — ATR only, optional, not a hard
+  // gate when the API is down. A positive hit is treated as a duplicate warning
+  // that blocks auto-submit so we don't waste the deposit; it is still not
+  // proof of on-chain registry membership.
   const chainConfig = getChain(chainKey);
   const chainId = chainConfig.chainId ?? 0;
   const caip10 = `eip155:${chainId}:${address.toLowerCase()}`;
   const registryAddress = (GNOSIS_ADDRESSES.registries as Record<string, string>)[registryKey];
 
+  const scoutPromise =
+    registryKey === "addressTags" && chainId
+      ? scoutAddressTagExists(address, [chainId])
+      : Promise.resolve(null);
+
   const [scoutPresent, subgraphPresent] = await Promise.all([
-    scoutAddressTagExists(address, chainId ? [chainId] : []),
+    scoutPromise,
     registryAddress ? isAddressRegistered(registryAddress, caip10) : Promise.resolve(null),
   ]);
 
-  const alreadyRegistered = scoutPresent === true || subgraphPresent === true;
-  const notInRegistry = !alreadyRegistered;
-  if (alreadyRegistered) {
-    errors.push("Already present in the Scout registry (scout-api or subgraph)");
+  const subgraphHit = subgraphPresent === true;
+  const scoutHit = scoutPresent === true;
+  const notInRegistry = !subgraphHit && !scoutHit;
+  if (subgraphHit) {
+    errors.push("Already present in the Scout registry (subgraph)");
+  } else if (scoutHit) {
+    log.warn(
+      "scout-api already lists a tag for this address — likely duplicate (advisory, not on-chain proof)"
+    );
+    errors.push("scout-api already lists a tag for this address (advisory duplicate)");
   } else if (scoutPresent === null && subgraphPresent === null) {
     log.warn(
       "Could not confirm registry membership (scout-api & subgraph unavailable) — proceeding"

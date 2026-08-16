@@ -1,45 +1,28 @@
 /**
  * Status Report
  *
- * Show the current state of all submissions — pending, accepted, challenged.
+ * Show recorded submissions, and (when item IDs exist) refresh them from
+ * live LGTCR state via getItemInfo / getRequestInfo.
  *
- * Usage: npm run status
+ * Usage:
+ *   npm run status
+ *   npm run status -- --live
  */
 
-import { readdirSync, readFileSync } from "fs";
-import { resolve } from "path";
 import { log } from "../src/utils/logger.js";
+import { loadSubmissionRecords, refreshSubmissionRecords } from "../src/track/index.js";
 
-const ROOT = resolve(import.meta.dirname, "..");
-const SUBMISSIONS_DIR = resolve(ROOT, "data/submissions");
+async function main() {
+  const live = process.argv.includes("--live");
+  const results = live
+    ? await refreshSubmissionRecords({ persist: true })
+    : loadSubmissionRecords().map(({ path, record }) => ({
+        path,
+        record,
+        assessment: null,
+      }));
 
-interface SubmissionRecord {
-  id: string;
-  address: string;
-  chain: string;
-  registry: string;
-  status: string;
-  ipfsCid?: string;
-  txHash?: string;
-  submittedAt?: string;
-}
-
-function loadSubmissions(): SubmissionRecord[] {
-  try {
-    const files = readdirSync(SUBMISSIONS_DIR).filter((f) => f.endsWith(".json"));
-    return files.map((f) => {
-      const path = resolve(SUBMISSIONS_DIR, f);
-      return JSON.parse(readFileSync(path, "utf-8"));
-    });
-  } catch {
-    return [];
-  }
-}
-
-function main() {
-  const submissions = loadSubmissions();
-
-  if (submissions.length === 0) {
+  if (results.length === 0) {
     console.log("No submissions recorded yet.\n");
     console.log("Start by running:");
     console.log("  npm run discover -- --chain base");
@@ -47,12 +30,12 @@ function main() {
     return;
   }
 
-  console.log(`\n=== Submission Status Report ===\n`);
-  console.log(`Total: ${submissions.length}\n`);
+  console.log(`\n=== Submission Status Report${live ? " (live)" : ""} ===\n`);
+  console.log(`Total: ${results.length}\n`);
 
-  const byStatus = submissions.reduce(
-    (acc, s) => {
-      acc[s.status] = (acc[s.status] || 0) + 1;
+  const byStatus = results.reduce(
+    (acc, { record }) => {
+      acc[record.status] = (acc[record.status] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>
@@ -64,14 +47,27 @@ function main() {
 
   console.log(`\n--- Recent ---\n`);
 
-  const recent = submissions
-    .sort((a, b) => (b.submittedAt || "").localeCompare(a.submittedAt || ""))
+  const recent = [...results]
+    .sort((a, b) =>
+      (b.record.submittedAt || "").localeCompare(a.record.submittedAt || "")
+    )
     .slice(0, 10);
 
-  for (const s of recent) {
-    const date = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : "unknown";
-    console.log(`  [${s.status.padEnd(10)}] ${s.chain}/${s.registry} ${s.address.slice(0, 12)}... (${date})`);
+  for (const { record, assessment } of recent) {
+    const date = record.submittedAt
+      ? new Date(record.submittedAt).toLocaleDateString()
+      : "unknown";
+    const extra = assessment ? ` → ${assessment.verdict}` : "";
+    console.log(
+      `  [${record.status.padEnd(10)}] ${record.chain}/${record.registry} ${record.address.slice(0, 12)}... (${date})${extra}`
+    );
+    if (assessment) {
+      console.log(`             ${assessment.reason}`);
+    }
   }
 }
 
-main();
+main().catch((err) => {
+  log.error("Status failed", err);
+  process.exit(1);
+});

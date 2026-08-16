@@ -20,14 +20,10 @@ import { gnosis } from "viem/chains";
 import {
   lightCurateAbi,
   arbitratorAbi,
-  viewHelperAbi,
-  GNOSIS_ADDRESSES,
-  META_EVIDENCE_TOPIC,
 } from "./abi.js";
 import { log } from "./logger.js";
 
 // Parse ABI fragments for viem readContract
-const parsedViewHelperAbi = parseAbi(viewHelperAbi as unknown as string[]);
 const parsedArbitratorAbi = parseAbi(arbitratorAbi as unknown as string[]);
 const parsedLightCurateAbi = parseAbi(lightCurateAbi as unknown as string[]);
 
@@ -273,13 +269,87 @@ export enum ItemStatus {
   ClearingRequested = 3,
 }
 
+export interface ItemInfo {
+  status: ItemStatus;
+  numberOfRequests: bigint;
+  sumDeposit: bigint;
+}
+
+export interface RequestInfo {
+  disputed: boolean;
+  disputeID: bigint;
+  submissionTime: bigint;
+  resolved: boolean;
+  parties: readonly [Address, Address, Address];
+  numberOfRounds: bigint;
+  ruling: number;
+  requestArbitrator: Address;
+  requestArbitratorExtraData: Hex;
+  metaEvidenceID: bigint;
+}
+
+function asBigint(value: unknown): bigint {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return BigInt(value);
+  if (typeof value === "string" && value !== "") return BigInt(value);
+  return 0n;
+}
+
+function decodeItemInfo(result: unknown): ItemInfo {
+  if (Array.isArray(result)) {
+    return {
+      status: Number(result[0]) as ItemStatus,
+      numberOfRequests: asBigint(result[1]),
+      sumDeposit: asBigint(result[2]),
+    };
+  }
+  const r = (result ?? {}) as Record<string, unknown>;
+  return {
+    status: Number(r.status ?? r[0] ?? 0) as ItemStatus,
+    numberOfRequests: asBigint(r.numberOfRequests ?? r[1]),
+    sumDeposit: asBigint(r.sumDeposit ?? r[2]),
+  };
+}
+
+function decodeRequestInfo(result: unknown): RequestInfo {
+  const pick = (arrIdx: number, ...keys: string[]): unknown => {
+    if (Array.isArray(result)) return result[arrIdx];
+    const r = (result ?? {}) as Record<string, unknown>;
+    for (const key of keys) {
+      if (r[key] !== undefined) return r[key];
+    }
+    return undefined;
+  };
+
+  const partiesRaw = pick(4, "parties") as Address[] | undefined;
+  const parties: readonly [Address, Address, Address] = [
+    (partiesRaw?.[0] ?? "0x0000000000000000000000000000000000000000") as Address,
+    (partiesRaw?.[1] ?? "0x0000000000000000000000000000000000000000") as Address,
+    (partiesRaw?.[2] ?? "0x0000000000000000000000000000000000000000") as Address,
+  ];
+
+  return {
+    disputed: Boolean(pick(0, "disputed")),
+    disputeID: asBigint(pick(1, "disputeID")),
+    submissionTime: asBigint(pick(2, "submissionTime")),
+    resolved: Boolean(pick(3, "resolved")),
+    parties,
+    numberOfRounds: asBigint(pick(5, "numberOfRounds")),
+    ruling: Number(pick(6, "ruling") ?? 0),
+    requestArbitrator: (pick(7, "requestArbitrator") ??
+      "0x0000000000000000000000000000000000000000") as Address,
+    requestArbitratorExtraData: (pick(8, "requestArbitratorExtraData") ?? "0x") as Hex,
+    metaEvidenceID: asBigint(pick(9, "metaEvidenceID")),
+  };
+}
+
 /**
  * Check if an item already exists in a registry.
  */
 export async function getItemStatus(
   registryAddress: Address,
   itemId: Hex
-): Promise<{ status: ItemStatus; numberOfRequests: bigint }> {
+): Promise<ItemInfo> {
   const client = getGnosisClient();
 
   const result = await client.readContract({
@@ -287,12 +357,55 @@ export async function getItemStatus(
     abi: parsedLightCurateAbi,
     functionName: "getItemInfo",
     args: [itemId],
-  }) as any;
+  });
 
-  return {
-    status: Number(result[0]) as ItemStatus,
-    numberOfRequests: result[1] as bigint,
-  };
+  return decodeItemInfo(result);
+}
+
+/**
+ * Read a specific request on an item. `requestId` is 0-indexed;
+ * the latest request is `numberOfRequests - 1`.
+ */
+export async function getRequestInfo(
+  registryAddress: Address,
+  itemId: Hex,
+  requestId: bigint
+): Promise<RequestInfo> {
+  const client = getGnosisClient();
+
+  const result = await client.readContract({
+    address: registryAddress,
+    abi: parsedLightCurateAbi,
+    functionName: "getRequestInfo",
+    args: [itemId, requestId],
+  });
+
+  return decodeRequestInfo(result);
+}
+
+/**
+ * Latest request for an item via `getItemInfo` + `getRequestInfo`.
+ *
+ * The LightGeneralizedTCRView helper's `getLatestRequestData` ABI fragment
+ * does not decode against the live Scout helper (viem rejects the first
+ * return as a boolean), so we read the registry directly.
+ */
+export async function getLatestRequest(
+  registryAddress: Address,
+  itemId: Hex
+): Promise<{ item: ItemInfo; request: RequestInfo | null }> {
+  const item = await getItemStatus(registryAddress, itemId);
+
+  if (item.numberOfRequests === 0n) {
+    return { item, request: null };
+  }
+
+  const request = await getRequestInfo(
+    registryAddress,
+    itemId,
+    item.numberOfRequests - 1n
+  );
+  return { item, request };
 }
 
 // --- Helpers ---

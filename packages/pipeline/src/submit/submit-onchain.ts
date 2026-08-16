@@ -18,7 +18,6 @@ import {
   createPublicClient,
   http,
   parseAbi,
-  encodeFunctionData,
   type Address,
   type Hex,
   type TransactionReceipt,
@@ -28,6 +27,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { lightCurateAbi } from "../utils/abi.js";
 import { computeSubmissionDeposit } from "../utils/registry.js";
 import { log } from "../utils/logger.js";
+
+const parsedLightCurateAbi = parseAbi(lightCurateAbi as unknown as string[]);
 
 // --- Types ---
 
@@ -235,5 +236,84 @@ export async function submitAddItem(
       deposit: totalDeposit,
       error: msg,
     };
+  }
+}
+
+export interface ExecuteRequestResult {
+  success: boolean;
+  simulated: boolean;
+  txHash?: Hex;
+  error?: string;
+}
+
+/**
+ * Finalize a request after the challenge window with no dispute.
+ *
+ * Always simulates first. When `broadcast` is false (default), returns the
+ * simulation result and does not send a transaction.
+ *
+ * ABI: `function executeRequest(bytes32 _itemID) external`
+ */
+export async function executeRequest(
+  registryAddress: Address,
+  itemId: Hex,
+  options: { broadcast?: boolean } = {}
+): Promise<ExecuteRequestResult> {
+  const broadcast = options.broadcast === true;
+  const privateKey = process.env.PRIVATE_KEY;
+  if (!privateKey) {
+    return { success: false, simulated: true, error: "PRIVATE_KEY not set" };
+  }
+
+  const rpcUrl = process.env.RPC_GNOSIS || "https://rpc.gnosischain.com";
+  const account = privateKeyToAccount(privateKey as Hex);
+  const publicClient = createPublicClient({
+    chain: gnosis,
+    transport: http(rpcUrl),
+  });
+
+  log.info(`Simulating executeRequest(${itemId}) on ${registryAddress}...`);
+
+  try {
+    await publicClient.simulateContract({
+      address: registryAddress,
+      abi: parsedLightCurateAbi,
+      functionName: "executeRequest",
+      args: [itemId],
+      account,
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    log.warn(`executeRequest simulation failed: ${msg}`);
+    return { success: false, simulated: true, error: msg };
+  }
+
+  if (!broadcast) {
+    log.info("[DRY RUN] executeRequest simulation passed — not broadcasting");
+    return { success: true, simulated: true };
+  }
+
+  const walletClient = createWalletClient({
+    chain: gnosis,
+    transport: http(rpcUrl),
+    account,
+  });
+
+  try {
+    const txHash = await walletClient.writeContract({
+      address: registryAddress,
+      abi: parsedLightCurateAbi,
+      functionName: "executeRequest",
+      args: [itemId],
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+    if (receipt.status !== "success") {
+      return { success: false, simulated: false, txHash, error: "Transaction reverted" };
+    }
+    log.info(`executeRequest confirmed: ${txHash}`);
+    return { success: true, simulated: false, txHash };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { success: false, simulated: false, error: msg };
   }
 }

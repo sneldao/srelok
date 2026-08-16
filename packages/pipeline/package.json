@@ -15,6 +15,7 @@
     "validate": "tsx src/submit/validate.ts",
     "submit": "tsx src/submit/index.ts",
     "challenge": "tsx src/challenge/index.ts",
+    "track": "tsx src/track/index.ts",
     "status": "tsx scripts/status.ts",
     "check-explorer": "tsx scripts/check-explorer.ts",
     "test-registry": "tsx scripts/test-registry.ts"
