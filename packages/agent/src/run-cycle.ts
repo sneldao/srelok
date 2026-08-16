@@ -3,29 +3,76 @@
  *
  * Usage:
  *   npx tsx src/run-cycle.ts --chain base --registry addressTags [--dry-run]
+ *   npx tsx src/run-cycle.ts --candidates <file.json> --chain base --registry addressTags --json
  *
- * This is called by the Go daemon's scheduler, or can be run manually.
+ * The Go daemon's scheduler feeds freshly discovered candidates via
+ * --candidates and reads the machine-readable result via --json (the daemon
+ * consumes the emitted JSON GraphResult to apply decisions to the queue).
  */
 
 import { config } from "dotenv";
+import { readFileSync } from "fs";
 import { runGraph, type CandidateState } from "./graph.js";
 import type { RegistryKey } from "./state.js";
 
 config(); // Load .env
 
+// Sample candidates used when none are supplied (manual/demo runs).
+const SAMPLE_CANDIDATES: CandidateState[] = [
+  {
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    chain: "base",
+    registry: "addressTags",
+    contractName: "FiatTokenV2_2",
+  },
+  {
+    address: "0x4200000000000000000000000000000000000006",
+    chain: "base",
+    registry: "addressTags",
+    contractName: "WETH9",
+  },
+];
+
+function getArg(args: string[], flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  return idx >= 0 ? args[idx + 1] : undefined;
+}
+
+// Load candidates from --candidates <path> if given, else fall back to samples.
+function loadCandidates(args: string[]): CandidateState[] {
+  const candidatesPath = getArg(args, "--candidates");
+  if (!candidatesPath) {
+    return SAMPLE_CANDIDATES;
+  }
+
+  const parsed = JSON.parse(readFileSync(candidatesPath, "utf-8")) as Array<Partial<CandidateState>>;
+  return parsed.map((c) => ({
+    address: String(c.address || ""),
+    chain: String(c.chain || ""),
+    registry: (c.registry || "addressTags") as RegistryKey,
+    contractName: c.contractName,
+  }));
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  const getArg = (flag: string): string | undefined => {
-    const idx = args.indexOf(flag);
-    return idx >= 0 ? args[idx + 1] : undefined;
-  };
-
-  const chain = getArg("--chain") || "base";
-  const registry = (getArg("--registry") || "addressTags") as RegistryKey;
+  const chain = getArg(args, "--chain") || "base";
+  const registry = (getArg(args, "--registry") || "addressTags") as RegistryKey;
   const dryRun = args.includes("--dry-run");
+  const jsonMode = args.includes("--json");
 
   if (dryRun) {
     process.env.DRY_RUN = "true";
+  }
+
+  const candidates = loadCandidates(args);
+
+  if (jsonMode) {
+    // Machine-readable output for the Go daemon; nothing else on stdout so the
+    // JSON stays parseable.
+    const result = await runGraph(chain, registry, candidates);
+    console.log(JSON.stringify(result, null, 2));
+    return;
   }
 
   console.log(`\n╔══════════════════════════════════════╗`);
@@ -35,23 +82,6 @@ async function main() {
   console.log(`║ Registry: ${registry.padEnd(27)}║`);
   console.log(`║ Mode:     ${(dryRun ? "DRY RUN" : "LIVE").padEnd(27)}║`);
   console.log(`╚══════════════════════════════════════╝\n`);
-
-  // In production, candidates come from the discovery pipeline.
-  // For demo/testing, we use sample candidates.
-  const candidates: CandidateState[] = [
-    {
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      chain: "base",
-      registry: "addressTags",
-      contractName: "FiatTokenV2_2",
-    },
-    {
-      address: "0x4200000000000000000000000000000000000006",
-      chain: "base",
-      registry: "addressTags",
-      contractName: "WETH9",
-    },
-  ];
 
   console.log(`Processing ${candidates.length} candidates...\n`);
 

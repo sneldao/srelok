@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kleros-scout/daemon/agent"
 	"github.com/kleros-scout/daemon/db"
 	"github.com/kleros-scout/daemon/ws"
 )
@@ -160,6 +161,7 @@ func (s *Scheduler) discoverChain(chain string) {
 		return
 	}
 
+	dbCandidates := make([]db.Candidate, 0, len(candidates))
 	for _, c := range candidates {
 		candidate := db.Candidate{
 			ID:           chain + "-" + c.Address[:10] + "-" + time.Now().Format("20060102"),
@@ -173,6 +175,7 @@ func (s *Scheduler) discoverChain(chain string) {
 			DiscoveredAt: time.Now().UTC().Format(time.RFC3339),
 		}
 		db.InsertCandidate(candidate)
+		dbCandidates = append(dbCandidates, candidate)
 
 		// Broadcast
 		evt, _ := json.Marshal(map[string]interface{}{
@@ -186,6 +189,13 @@ func (s *Scheduler) discoverChain(chain string) {
 	}
 
 	log.Printf("Found %d candidates on %s", len(candidates), chain)
+
+	// Hand the freshly discovered candidates to the LangGraph agent in the
+	// background (no-op unless OPENAI_API_KEY is present). The agent applies
+	// approve/queue/reject back to the candidate rows.
+	if len(dbCandidates) > 0 {
+		go agent.RunCycle(s.hub, dbCandidates, chain, "addressTags")
+	}
 }
 
 func strPtr(s string) *string {

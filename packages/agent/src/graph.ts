@@ -35,10 +35,16 @@ const NODES: Record<string, NodeFn> = {
 
 // --- Graph execution ---
 
+export interface CandidateDecision {
+  address: string;
+  decision: "approve" | "queue" | "reject";
+}
+
 export interface GraphResult {
   candidates: CandidateState[];
   errors: string[];
   tokensUsed: number;
+  decisions: CandidateDecision[];
   summary: {
     total: number;
     approved: number;
@@ -60,6 +66,7 @@ export async function runGraph(
 ): Promise<GraphResult> {
   const results: CandidateState[] = [];
   const allErrors: string[] = [];
+  const decisions: CandidateDecision[] = [];
   let totalTokens = 0;
   let approved = 0;
   let queued = 0;
@@ -90,6 +97,7 @@ export async function runGraph(
     // Record result
     if (state.current) {
       results.push(state.current);
+      decisions.push({ address: state.current.address, decision: state.decision ?? "reject" });
     }
 
     // Count decisions
@@ -107,6 +115,7 @@ export async function runGraph(
     candidates: results,
     errors: allErrors,
     tokensUsed: totalTokens,
+    decisions,
     summary: {
       total: candidates.length,
       approved,
