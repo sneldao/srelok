@@ -14,6 +14,7 @@ import { log } from "../utils/logger.js";
 import { getRegistry } from "../utils/config.js";
 import { GNOSIS_ADDRESSES } from "../utils/abi.js";
 import { itemsInChallengeWindow } from "../utils/subgraph.js";
+import { fileURLToPath } from "url";
 
 // --- Types ---
 
@@ -25,6 +26,7 @@ interface RegistryEntry {
   status: "registered" | "registration_requested" | "removal_requested";
   submitter: string;
   submittedAt: string;
+  data?: string; // raw item.json payload (for per-registry field checks)
 }
 
 interface ChallengeOpportunity {
@@ -70,6 +72,7 @@ async function fetchChallengeable(registryKey: string): Promise<RegistryEntry[]>
       status: "registration_requested",
       submitter: "", // available from on-chain request info; not in subgraph item
       submittedAt: "",
+      data: it.data,
     });
   }
   return entries;
@@ -121,33 +124,193 @@ function pickTag(values: Record<string, unknown>): string | undefined {
 
 /**
  * Check an entry against the registry policy for compliance.
- * Returns challenge opportunities if issues are found.
+ *
+ * These are heuristic pre-screening checks over the submitted item.json and
+ * the parsed registry fields. They surface obvious policy violations (malformed
+ * addresses, placeholder tags, absent token/CDN/ATQ fields). They do NOT
+ * on-chain-verify contract bytecode or the legitimacy of external websites,
+ * which need per-candidate RPC/HTTP research — so any flag here is a candidate
+ * for a human (or an LLM judge node) to confirm BEFORE a real challenge that
+ * stakes a deposit.
+ *
+ * Returns a ChallengeOpportunity when a violation is found, else null.
  */
-async function checkCompliance(
-  _entry: RegistryEntry,
-  _registryKey: string
+export async function checkCompliance(
+  entry: RegistryEntry,
+  registryKey: string
 ): Promise<ChallengeOpportunity | null> {
-  // TODO: Implement policy checks:
-  // ATR:
-  //   - Is the tag accurate for the contract?
-  //   - Does the address actually have code?
-  //   - Is the chain ID correct?
-  //   - Is the tag format compliant with policy?
-  //
-  // Tokens:
-  //   - Is the token metadata (name, symbol, decimals) correct?
-  //   - Does the logo match?
-  //   - Is the website legitimate?
-  //
-  // CDN:
-  //   - Does the domain actually serve the contract/project?
-  //   - Is the logo valid and loading?
-  //   - Is the mapping accurate?
+  const issues: string[] = [];
+  let confidence: "high" | "medium" | "low" = "high";
 
-  log.warn("Compliance checking not yet implemented");
-  return null;
+  const values = parseValues(entry.data);
+
+  // Shared checks: a compliant item must name a well-formed contract address
+  // on a known chain.
+  if (!entry.address || !/^0x[0-9a-fA-F]{40}$/.test(entry.address)) {
+    issues.push(`Item has no parseable contract address: "${entry.address}"`);
+    confidence = "low";
+  }
+  const chainId = Number(parseChainId(entry.chain));
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    issues.push(`Item has no valid chain ID: "${entry.chain}"`);
+    confidence = "low";
+  }
+
+  switch (registryKey) {
+    case "addressTags": {
+      const tag = (entry.tag ?? "").trim();
+      if (!tag) {
+        issues.push("ATR entry is missing a tag");
+        confidence = "low";
+      } else if (tag.length > 64) {
+        issues.push(`ATR tag exceeds 64 chars: "${tag}"`);
+        confidence = "medium";
+      } else if (/^0x[0-9a-fA-F]{40}$/.test(tag) || /^eip155:\d+:0x/.test(tag)) {
+        issues.push(`ATR tag looks like an address, not a public name tag: "${tag}"`);
+        confidence = "medium";
+      } else if (/^(unknown|n\/a|na|tbd|contract\s+\d+)$/i.test(tag)) {
+        issues.push(`ATR tag looks like a placeholder: "${tag}"`);
+        confidence = "medium";
+      }
+      break;
+    }
+
+    case "tokens": {
+      const name = getStr(values, ["Name", "name", "Token Name", "tokenName"]);
+      const symbol = getStr(values, ["Symbol", "symbol", "Token Symbol"]);
+      const decimals = first(values, ["Decimals", "decimals", "Decimal"]);
+      const logo = getStr(values, ["Logo", "logo", "Logo URL"]);
+      const website = getStr(values, ["Website", "website", "Web"]);
+
+      if (!name || name.trim().length < 2) {
+        issues.push("Token entry has no usable name");
+        confidence = "medium";
+      }
+      if (!symbol || symbol.trim().length < 1 || symbol.trim().length > 11) {
+        issues.push(`Token symbol looks invalid: "${symbol}"`);
+        confidence = "medium";
+      }
+      const d = Number(decimals);
+      const hasDecimals = decimals !== undefined && decimals !== null && decimals !== "";
+      if (!hasDecimals || !Number.isInteger(d) || d < 0 || d > 24) {
+        issues.push(`Token decimals look invalid: "${decimals}"`);
+        confidence = "medium";
+      }
+      if (logo && !isHttpUrl(logo)) {
+        issues.push(`Token logo is not an http(s) URL: "${logo}"`);
+        confidence = "medium";
+      }
+      if (website && !isHttpUrl(website)) {
+        issues.push(`Token website is not an http(s) URL: "${website}"`);
+        confidence = "medium";
+      }
+      break;
+    }
+
+    case "cdn": {
+      const domain = getString(values, ["Domain", "domain", "Website", "URL", "url"]);
+      if (!domain || !isHttpUrl(domain)) {
+        issues.push(`CDN entry has no valid domain URL: "${domain}"`);
+        confidence = "low";
+      } else {
+        const host = domain.split("/")[2] ?? "";
+        if (!host.includes(".")) {
+          issues.push(`CDN domain has no TLD: "${domain}"`);
+          confidence = "medium";
+        }
+      }
+      const visualProof = getString(values, ["Visual Proof", "Screenshot", "visualProof"]);
+      if (!visualProof) {
+        issues.push("CDN entries must include a visual-proof screenshot");
+        confidence = "low";
+      } else if (!isHttpUrl(visualProof)) {
+        issues.push(`CDN visual proof is not an http(s) URL: "${visualProof}"`);
+        confidence = "low";
+      }
+      break;
+    }
+
+    case "atq": {
+      const repo = getString(values, ["Repo URL", "Repository", "Repository URL", "repo"]);
+      if (!repo) {
+        issues.push("ATQ entries must reference a repository/commit");
+        confidence = "low";
+      } else if (!/^https?:\/\//i.test(repo)) {
+        issues.push(`ATQ repository is not a URL: "${repo}"`);
+        confidence = "medium";
+      }
+      break;
+    }
+
+    default:
+      issues.push(`Unsupported registry for compliance: "${registryKey}"`);
+      confidence = "low";
+  }
+
+  if (issues.length === 0) {
+    return null; // no obvious violation found
+  }
+
+  return {
+    entry,
+    reason: issues.join("; "),
+    confidence,
+    estimatedBounty: undefined,
+  };
 }
 
+// --- Compliance helpers ---
+
+/** Parse the values map out of an item.json payload (loose; never throws). */
+function parseValues(data?: string): Record<string, unknown> {
+  if (!data) return {};
+  try {
+    const obj = JSON.parse(data) as { values?: Record<string, unknown> };
+    return obj.values ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** First non-empty string value for any of the given keys. */
+function getStr(
+  values: Record<string, unknown>,
+  keys: string[]
+): string | undefined {
+  for (const key of keys) {
+    const v = values[key];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return undefined;
+}
+
+/** Alias for getStr (kept for readability at call sites). */
+function getString(
+  values: Record<string, unknown>,
+  keys: string[]
+): string | undefined {
+  return getStr(values, keys);
+}
+
+/** First raw (any-type) value for any of the given keys. */
+function first(values: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (values[key] !== undefined && values[key] !== null) return values[key];
+  }
+  return undefined;
+}
+
+/** Extract a numeric chain id from a CAIP-2 string, e.g. "eip155:8453" -> 8453. */
+function parseChainId(chain: string): number {
+  if (!chain) return NaN;
+  const parts = chain.split(":");
+  return Number(parts[parts.length - 1]);
+}
+
+/** Loose http(s) URL check. */
+function isHttpUrl(s: string): boolean {
+  return /^https?:\/\/[^\s]+$/i.test(s.trim());
+}
 // --- CLI Entry Point ---
 
 async function main() {
@@ -187,12 +350,14 @@ async function main() {
     }
   } else {
     console.log("Usage: npm run challenge -- --registry <registry> --scan");
-    console.log("\nRegistries: addressTags, tokens, cdn");
+    console.log("\nRegistries: addressTags, tokens, cdn, atq");
     console.log("\nThis will scan for entries in their challenge window and check compliance.");
   }
 }
 
-main().catch((err) => {
-  log.error("Challenge monitor failed", err);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    log.error("Challenge monitor failed", err);
+    process.exit(1);
+  });
+}
