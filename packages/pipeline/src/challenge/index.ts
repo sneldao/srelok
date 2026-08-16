@@ -12,6 +12,8 @@
 
 import { log } from "../utils/logger.js";
 import { getRegistry } from "../utils/config.js";
+import { GNOSIS_ADDRESSES } from "../utils/abi.js";
+import { itemsInChallengeWindow } from "../utils/subgraph.js";
 
 // --- Types ---
 
@@ -37,13 +39,84 @@ interface ChallengeOpportunity {
 /**
  * Fetch entries currently in "registration requested" status.
  * These are within their challenge window and can be challenged.
+ *
+ * Backed by the Curate subgraph (see src/utils/subgraph.ts); subgraph
+ * availability is gated on the SCOUT_SUBGRAPH_URL env var. Returns an empty
+ * list when the subgraph is unavailable so scanning degrades gracefully.
  */
-async function fetchChallengeable(_registryKey: string): Promise<RegistryEntry[]> {
-  // TODO: Query the registry's subgraph for items in challenge window
-  // - Light Curate: items with status = RegistrationRequested
-  // - Filter to items within challenge period
-  log.warn("Registry scanning not yet implemented — load kleros-curate skill");
-  return [];
+async function fetchChallengeable(registryKey: string): Promise<RegistryEntry[]> {
+  const registryAddress = (GNOSIS_ADDRESSES.registries as Record<string, string>)[registryKey];
+  if (!registryAddress) {
+    log.warn(`No contract address for registry "${registryKey}"`);
+    return [];
+  }
+
+  const items = await itemsInChallengeWindow(registryAddress);
+  if (items.length === 0) {
+    log.info("No items in challenge window (or subgraph not configured)");
+    return [];
+  }
+
+  log.info(`Found ${items.length} item(s) in challenge window; parsing item data...`);
+
+  const entries: RegistryEntry[] = [];
+  for (const it of items) {
+    const parsed = parseItemData(it.data);
+    entries.push({
+      itemId: it.itemId || parsed.address || "",
+      address: parsed.address ?? "",
+      chain: parsed.chainId ? `eip155:${parsed.chainId}` : "",
+      tag: parsed.tag,
+      status: "registration_requested",
+      submitter: "", // available from on-chain request info; not in subgraph item
+      submittedAt: "",
+    });
+  }
+  return entries;
+}
+
+/**
+ * Best-effort extraction of { address, chainId, tag } from an ATR item.json
+ * payload. The subgraph item's "data" field holds the submitted item.json.
+ * Loose by design — resolves to empty fields rather than throwing when the
+ * shape differs from the current registry schema.
+ */
+function parseItemData(data: string): { address: string; chainId?: string; tag?: string } {
+  try {
+    const obj = JSON.parse(data) as { values?: Record<string, unknown> };
+    const values = obj.values ?? {};
+    const strValues = Object.values(values).filter((v): v is string => typeof v === "string");
+
+    // Preferred: CAIP-10 encoded address, e.g. "eip155:8453:0x...".
+    const caip = strValues.map((s) => s.trim()).find((s) => /^eip155:\d+:0x[0-9a-fA-F]{40}$/.test(s));
+    const caipMatch = caip?.match(/^eip155:(\d+):(0x[0-9a-fA-F]{40})$/);
+    if (caipMatch) {
+      return { address: caipMatch[2].toLowerCase(), chainId: caipMatch[1], tag: pickTag(values) };
+    }
+
+    // Fallback: bare address.
+    const bare = strValues.map((s) => s.trim()).find((s) => /^0x[0-9a-fA-F]{40}$/.test(s));
+    return { address: bare?.toLowerCase() ?? "", tag: pickTag(values) };
+  } catch {
+    return { address: "", tag: "" };
+  }
+}
+
+/** Pick the most likely label field from an item's values map. */
+function pickTag(values: Record<string, unknown>): string | undefined {
+  const keys = ["Tag", "Tag/Label", "Tag / Label", "Public Name Tag", "Label"];
+  for (const key of keys) {
+    const v = values[key];
+    if (typeof v === "string" && v.trim()) {
+      return v.trim();
+    }
+  }
+  // Fall back to the first shortish string that isn't an address/CAIP.
+  const candidate = Object.values(values)
+    .filter((v): v is string => typeof v === "string" && !!v.trim())
+    .map((s) => s.trim())
+    .find((s) => s.length <= 64 && !s.startsWith("0x") && !/^eip155:\d+:0x/.test(s));
+  return candidate;
 }
 
 /**
