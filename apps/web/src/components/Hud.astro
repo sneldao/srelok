@@ -1,14 +1,15 @@
 ---
 /**
- * SSE → rim HUD. Lives as an Astro script island; markup stays in Hero.
+ * SSE + /api/stats → hero counters, live log, and step highlight.
  */
 ---
 
 <script>
   import { prefersReducedMotion } from "../lib/gsap/init";
+  import { connectFeed, fetchStats } from "../lib/live";
 
-  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
   const feedEl = document.getElementById("hud-feed");
+  const feedList = document.getElementById("feed-list");
   const hero = document.querySelector<HTMLElement>(".hero");
 
   const labels: Record<string, string> = {
@@ -23,47 +24,82 @@
     submission_complete: "submit",
   };
 
+  function applyStats(stats: {
+    totalSubmissions: number;
+    totalPnkEarned: string;
+  }) {
+    const pnk = stats.totalPnkEarned || "0";
+    const submissions = String(stats.totalSubmissions ?? 0);
+    const pnkHud = document.getElementById("hud-pnk");
+    const pnkTotal = document.getElementById("total-pnk");
+    const subEl = document.getElementById("stat-submissions");
+    if (pnkHud) pnkHud.textContent = pnk;
+    if (pnkTotal) pnkTotal.textContent = pnk;
+    if (subEl) subEl.textContent = submissions;
+  }
+
+  function prependFeed(data: {
+    type: string;
+    chain?: string;
+    address?: string;
+    name?: string;
+    timestamp?: string;
+  }) {
+    if (!feedList) return;
+    feedList.querySelector(".feed__empty")?.remove();
+
+    const chain = data.chain || "gnosis";
+    const addr = data.address ? `${data.address.slice(0, 6)}…${data.address.slice(-4)}` : "";
+    const label = labels[data.type] || data.type.replace(/_/g, " ");
+    const time = data.timestamp
+      ? new Date(data.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "";
+
+    const row = document.createElement("article");
+    row.className = "feed__entry";
+    row.innerHTML = `
+      <span class="mono feed__time">${time}</span>
+      <span class="chain-badge chain-badge--${chain}">${chain}</span>
+      <span class="feed__meta">${label}${addr ? ` · ${addr}` : ""}${data.name ? ` · ${data.name}` : ""}</span>
+    `;
+    feedList.prepend(row);
+
+    const entries = feedList.querySelectorAll(".feed__entry");
+    if (entries.length > 24) entries[entries.length - 1].remove();
+  }
+
   function tick(data: {
     type: string;
     chain?: string;
     address?: string;
     name?: string;
+    timestamp?: string;
   }) {
-    if (!feedEl) return;
-    const chain = data.chain || "gno";
-    const addr = data.address ? `${data.address.slice(0, 4)}…${data.address.slice(-3)}` : "";
-    const label = labels[data.type] || data.type.replace(/_/g, " ");
-    feedEl.textContent = [chain, label, addr, data.name].filter(Boolean).join(" · ");
+    if (feedEl) {
+      const chain = data.chain || "gno";
+      const addr = data.address ? `${data.address.slice(0, 4)}…${data.address.slice(-3)}` : "";
+      const label = labels[data.type] || data.type.replace(/_/g, " ");
+      feedEl.textContent = [chain, label, addr, data.name].filter(Boolean).join(" · ");
+      if (!prefersReducedMotion()) {
+        feedEl.classList.remove("is-flash");
+        void feedEl.offsetWidth;
+        feedEl.classList.add("is-flash");
+      }
+    }
 
     const verb = verbFor[data.type];
     if (hero && verb) {
-      hero.classList.add("is-live");
       hero.querySelectorAll("[data-verb]").forEach((el) => {
         el.classList.toggle("is-on", el.getAttribute("data-verb") === verb);
       });
     }
 
-    if (!prefersReducedMotion()) {
-      feedEl.classList.remove("is-flash");
-      void feedEl.offsetWidth;
-      feedEl.classList.add("is-flash");
-    }
+    prependFeed(data);
   }
 
-  function connectFeed() {
-    const src = new EventSource(`${API_BASE}/api/feed`);
-    src.onmessage = (event) => {
-      try {
-        tick(JSON.parse(event.data));
-      } catch {
-        /* ignore */
-      }
-    };
-    src.onerror = () => {
-      src.close();
-      setTimeout(connectFeed, 5000);
-    };
-  }
+  fetchStats().then((stats) => {
+    if (stats) applyStats(stats);
+  });
 
-  if (typeof window !== "undefined") connectFeed();
+  if (typeof window !== "undefined") connectFeed(tick);
 </script>

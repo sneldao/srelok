@@ -129,6 +129,22 @@ p, .body {
 .section {
   padding: var(--section-gap) 0;
   position: relative;
+  border-top: 1px solid var(--color-border);
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.section-lede {
+  max-width: 38rem;
+  margin: 0.85rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
 }
 
 .container {
@@ -159,6 +175,11 @@ p, .body {
 .chain-badge--ethereum { border-color: var(--chain-ethereum); color: var(--chain-ethereum); }
 .chain-badge--linea { border-color: var(--chain-linea); color: var(--chain-linea); }
 .chain-badge--celo { border-color: var(--chain-celo); color: var(--chain-celo); }
+.chain-badge--avalanche { border-color: var(--chain-avalanche); color: var(--chain-avalanche); }
+.chain-badge--polygon { border-color: var(--chain-polygon); color: var(--chain-polygon); }
+.chain-badge--zksync { border-color: var(--chain-zksync); color: var(--chain-zksync); }
+.chain-badge--megaeth { border-color: #ff6b35; color: #ff6b35; }
+.chain-badge--solana { border-color: #9945ff; color: #9945ff; }
 
 .status-dot {
   width: 7px;

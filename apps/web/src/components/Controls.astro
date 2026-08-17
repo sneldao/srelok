@@ -14,7 +14,11 @@
 
 <section class="controls section" id="controls">
   <div class="container">
+    <p class="mono section-kicker">cockpit</p>
     <h2>Operator</h2>
+    <p class="section-lede">
+      High-confidence items submit on their own. Anything under the threshold waits here for an approve or reject. Discovery can also be kicked by hand.
+    </p>
 
     <div class="controls__grid" data-reveal="group">
       <!-- Candidate Queue -->
@@ -25,7 +29,8 @@
         </div>
         <div class="controls__queue" id="candidate-queue">
           <div class="controls__empty">
-            <p class="mono">—</p>
+            <p class="mono">No candidates pending review</p>
+            <p>The queue fills when a cycle finds an item the agent will not auto-submit.</p>
           </div>
         </div>
       </div>
@@ -159,10 +164,6 @@
 </script>
 
 <style>
-  .controls h2 {
-    margin-bottom: 2rem;
-  }
-
   .controls__grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -217,6 +218,11 @@
 
   .controls__empty p {
     color: var(--color-text-muted);
+  }
+
+  .controls__empty p:last-child {
+    margin-top: 0.45rem;
+    font-size: 0.85rem;
   }
 
   .controls__candidate {

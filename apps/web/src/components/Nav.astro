@@ -1,6 +1,9 @@
 ---
 const links = [
-  { href: "#hero", label: "Lens" },
+  { href: "#hero", label: "Brief" },
+  { href: "#pipeline", label: "Pipeline" },
+  { href: "#feed", label: "Activity" },
+  { href: "#field", label: "Field" },
   { href: "#controls", label: "Operator" },
 ];
 ---
@@ -39,7 +42,9 @@ const links = [
 
   .nav__links {
     display: flex;
-    gap: 1.25rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.85rem 1.15rem;
   }
 
   .nav__link {

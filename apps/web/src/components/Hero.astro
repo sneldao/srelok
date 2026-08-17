@@ -1,15 +1,11 @@
 ---
-/**
- * Opening case file: name, one line, six steps, live rim.
- * Type sits on paper. Emphasis is CSS, not a canvas mask.
- */
-const verbs = [
-  { id: "discover", label: "Discover" },
-  { id: "research", label: "Research" },
-  { id: "evaluate", label: "Evaluate" },
-  { id: "build", label: "Build" },
-  { id: "submit", label: "Submit" },
-  { id: "track", label: "Track" },
+const steps = [
+  { id: "discover", label: "Discover", hint: "untagged contracts" },
+  { id: "research", label: "Research", hint: "source · deployer" },
+  { id: "evaluate", label: "Evaluate", hint: "policy · explorer" },
+  { id: "build", label: "Build", hint: "item.json" },
+  { id: "submit", label: "Submit", hint: "ipfs → addItem" },
+  { id: "track", label: "Track", hint: "84h window" },
 ];
 ---
 
@@ -17,79 +13,128 @@ const verbs = [
   <div class="hero__copy">
     <p class="mono hero__kicker">
       <span class="status-dot status-dot--accepted"></span>
-      gnosis · scout
+      agent online · gnosis
     </p>
-    <h1>Srelok</h1>
-    <p class="hero__lede">Autonomous curation for Kleros Scout registries.</p>
+    <h1>The on-chain detective</h1>
+    <p class="hero__lede">
+      Srelok is an autonomous agent for the
+      <a href="https://docs.kleros.io/products/scout-earn">Kleros Scout</a>
+      program. It finds untagged contracts across twelve chains, decides what they are, and submits metadata to four registries on Gnosis — earning PNK if the item survives the challenge window.
+    </p>
   </div>
 
+  <dl class="hero__stats">
+    <div>
+      <dt class="mono">submissions</dt>
+      <dd class="tabular" id="stat-submissions">0</dd>
+    </div>
+    <div>
+      <dt class="mono">chains</dt>
+      <dd class="tabular">12</dd>
+    </div>
+    <div>
+      <dt class="mono">registries</dt>
+      <dd class="tabular">4</dd>
+    </div>
+    <div>
+      <dt class="mono">PNK earned</dt>
+      <dd class="tabular" id="hud-pnk">0</dd>
+    </div>
+  </dl>
+
   <ol class="hero__steps">
-    {verbs.map((v, i) => (
-      <li class="hero__step" data-verb={v.id} style={`--i: ${i}`}>
-        <span class="mono hero__idx">{String(i + 1).padStart(2, "0")}</span>
-        <span class="hero__label">{v.label}</span>
+    {steps.map((s, i) => (
+      <li class="hero__step" data-verb={s.id}>
+        <a href="#pipeline">
+          <span class="mono hero__idx">{String(i + 1).padStart(2, "0")}</span>
+          <span class="hero__label">{s.label}</span>
+          <span class="hero__hint">{s.hint}</span>
+        </a>
       </li>
     ))}
   </ol>
 
-  <div class="hero__hud">
-    <span class="mono" id="hud-feed">awaiting</span>
-    <span class="mono tabular" id="hud-pnk">0 PNK</span>
-  </div>
+  <p class="hero__hud mono" id="hud-feed">awaiting live signal from the daemon</p>
 </section>
 
 <style>
   .hero {
-    position: relative;
-    min-height: 100svh;
     display: grid;
-    grid-template-rows: 1fr auto auto;
-    padding: 6.5rem clamp(1.25rem, 4vw, 3.5rem) 1.75rem;
-    gap: 2.5rem;
+    gap: 2.25rem;
+    padding: 7rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
+    min-height: 0;
   }
 
   .hero__kicker {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0 0 1.25rem;
+    margin: 0 0 1.1rem;
     color: var(--color-text);
   }
 
   .hero h1 {
     margin: 0;
+    max-width: 14ch;
     color: var(--color-text);
   }
 
   .hero__lede {
-    margin: 1rem 0 0;
-    max-width: 22rem;
+    margin: 1.15rem 0 0;
+    max-width: 38rem;
     font-size: 1.05rem;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--color-text-muted);
   }
 
-  .hero__steps {
-    list-style: none;
+  .hero__lede a {
+    color: var(--color-text);
+    text-underline-offset: 0.18em;
+  }
+
+  .hero__stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.15rem 2rem;
+    gap: 1rem 1.5rem;
     margin: 0;
     padding: 1.25rem 0 0;
     border-top: 1px solid var(--color-border);
     max-width: 36rem;
   }
 
-  .hero__step {
-    display: grid;
-    grid-template-columns: 2.25rem 1fr;
-    align-items: baseline;
-    gap: 0.65rem;
+  .hero__stats dt {
+    color: var(--color-text-muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .hero__stats dd {
     margin: 0;
-    padding: 0.45rem 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
     color: var(--color-text);
-    opacity: 0.3;
-    animation: step-on 18s calc(var(--i) * -3s) infinite;
+  }
+
+  .hero__steps {
+    list-style: none;
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .hero__step a {
+    display: grid;
+    grid-template-columns: 2.2rem minmax(0, 8rem) 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
   }
 
   .hero__idx {
@@ -98,89 +143,73 @@ const verbs = [
 
   .hero__label {
     font-family: var(--font-display);
-    font-size: clamp(1.35rem, 3.2vw, 2.15rem);
+    font-size: 1.15rem;
     font-weight: 600;
     letter-spacing: -0.03em;
-    line-height: 1.1;
+    color: var(--color-text);
   }
 
-  .hero.is-live .hero__step {
-    animation: none;
-    opacity: 0.3;
+  .hero__hint {
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
   }
 
-  .hero.is-live .hero__step.is-on {
-    opacity: 1;
+  .hero__step.is-on .hero__label {
+    color: var(--color-accent);
   }
 
   .hero__hud {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--color-border);
-    color: var(--color-text);
+    margin: 0;
+    color: var(--color-text-muted);
   }
 
   #hud-feed.is-flash {
     animation: flash 0.55s var(--ease-out);
   }
 
-  @keyframes step-on {
-    0%,
-    12% {
-      opacity: 1;
-    }
-    16.6%,
-    100% {
-      opacity: 0.3;
-    }
-  }
-
   @keyframes flash {
-    from {
-      opacity: 0.35;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0.35; }
+    to { opacity: 1; }
   }
 
-  @media (min-width: 900px) {
+  @media (min-width: 960px) {
     .hero {
-      grid-template-columns: 1fr minmax(16rem, 22rem);
-      grid-template-rows: 1fr auto;
-      align-items: end;
-      column-gap: 3rem;
+      grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.9fr);
+      grid-template-rows: auto auto auto;
+      column-gap: 3.5rem;
+      row-gap: 2rem;
+      padding-top: 8rem;
     }
 
     .hero__copy {
       grid-column: 1;
       grid-row: 1;
-      align-self: center;
+    }
+
+    .hero__stats {
+      grid-column: 1;
+      grid-row: 2;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      max-width: none;
     }
 
     .hero__steps {
       grid-column: 2;
-      grid-row: 1;
-      align-self: center;
-      grid-template-columns: 1fr;
-      max-width: none;
+      grid-row: 1 / span 2;
       border-top: 0;
-      padding-top: 0;
     }
 
     .hero__hud {
       grid-column: 1 / -1;
-      grid-row: 2;
+      grid-row: 3;
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--color-border);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero__step {
+    #hud-feed.is-flash {
       animation: none;
-      opacity: 1;
     }
   }
 </style>

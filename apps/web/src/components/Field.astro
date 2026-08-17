@@ -1,0 +1,177 @@
+---
+const registries = [
+  { key: "atr", label: "Address Tags", pool: "100,000", max: "500 PNK", contract: "0x66260C69…" },
+  { key: "tokens", label: "Token Registry", pool: "100,000", max: "500 PNK", contract: "0xeE1502e2…" },
+  { key: "cdn", label: "Contract Domains", pool: "100,000", max: "500 PNK", contract: "0x957A53A9…" },
+  { key: "atq", label: "Address Tag Queries", pool: "60,000", max: "pool share", contract: "0xAe6aaed5…" },
+];
+
+const chains = [
+  { id: "ethereum", label: "Ethereum" },
+  { id: "base", label: "Base" },
+  { id: "arbitrum", label: "Arbitrum" },
+  { id: "optimism", label: "Optimism" },
+  { id: "gnosis", label: "Gnosis" },
+  { id: "polygon", label: "Polygon" },
+  { id: "linea", label: "Linea" },
+  { id: "avalanche", label: "Avalanche" },
+  { id: "celo", label: "Celo" },
+  { id: "zksync", label: "zkSync" },
+  { id: "megaeth", label: "MegaETH" },
+  { id: "solana", label: "Solana" },
+];
+
+const facts = [
+  { label: "Submission deposit", value: "51.6 xDAI", note: "Returned in full if the item is accepted after 84 hours." },
+  { label: "IPFS pin", value: "$0.01 USDC", note: "Paid on Base through the x402 gateway, per payload." },
+  { label: "Challenge window", value: "84 hours", note: "The agent tracks getItemInfo / getRequestInfo and maps the verdict." },
+];
+---
+
+<section class="field section" id="field">
+  <div class="container">
+    <p class="mono section-kicker">coverage</p>
+    <h2>Four registries, twelve chains</h2>
+    <p class="section-lede">
+      Submissions land on Light Generalised TCRs on Gnosis. Discovery runs on the chains Scout actually pays for. Monthly pools are 360,000 PNK across ATR, Tokens, CDN, and ATQ.
+    </p>
+
+    <div class="field__earned">
+      <span class="mono">earned to date</span>
+      <p>
+        <span class="field__amount tabular" id="total-pnk">0</span>
+        <span class="mono">PNK</span>
+      </p>
+    </div>
+
+    <div class="field__table" role="table">
+      <div class="field__row field__row--head mono" role="row">
+        <span>Registry</span>
+        <span>Pool / month</span>
+        <span>Cap</span>
+        <span>Gnosis</span>
+      </div>
+      {registries.map((reg) => (
+        <div class="field__row" role="row">
+          <span>{reg.label}</span>
+          <span class="mono">{reg.pool}</span>
+          <span class="mono">{reg.max}</span>
+          <span class="mono">{reg.contract}</span>
+        </div>
+      ))}
+    </div>
+
+    <ul class="field__chains">
+      {chains.map((c) => (
+        <li class={`chain-badge chain-badge--${c.id}`}>{c.label}</li>
+      ))}
+    </ul>
+
+    <div class="field__facts">
+      {facts.map((f) => (
+        <article>
+          <h3>{f.label}</h3>
+          <p class="mono field__value">{f.value}</p>
+          <p>{f.note}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .field__earned {
+    margin: 2.25rem 0 2rem;
+  }
+
+  .field__earned p {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin: 0.35rem 0 0;
+    color: var(--color-text);
+  }
+
+  .field__amount {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+  }
+
+  .field__table {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .field__row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--color-border);
+    align-items: baseline;
+  }
+
+  .field__row--head {
+    color: var(--color-text-muted);
+    padding-top: 0;
+    border-bottom-width: 2px;
+  }
+
+  .field__chains {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    list-style: none;
+    margin: 2rem 0 0;
+    padding: 0;
+  }
+
+  .field__facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .field__facts h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+
+  .field__value {
+    margin: 0 0 0.45rem;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 1rem;
+  }
+
+  .field__facts p {
+    margin: 0;
+    font-size: 0.92rem;
+  }
+
+  @media (max-width: 800px) {
+    .field__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .field__row span:nth-child(n + 3) {
+      display: none;
+    }
+
+    .field__row--head span:nth-child(n + 3) {
+      display: none;
+    }
+
+    .field__facts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,82 +1,104 @@
 ---
-/**
- * Horizontal type carousel — one verb per panel, almost no copy.
- * Scroll-snap instead of a six-row essay.
- */
-
 const stages = [
-  { id: "discover", label: "Discover", hint: "untagged contracts" },
-  { id: "research", label: "Research", hint: "what it is" },
-  { id: "evaluate", label: "Evaluate", hint: "policy · explorer" },
-  { id: "build", label: "Build", hint: "item.json" },
-  { id: "submit", label: "Submit", hint: "ipfs → addItem" },
-  { id: "track", label: "Track", hint: "84h window" },
+  {
+    id: "discover",
+    label: "Discover",
+    description: "Scan eligible chains for contracts that still have no explorer tag.",
+    detail: "Base, Arbitrum, Optimism, Linea, Celo, and the rest of the Scout set.",
+  },
+  {
+    id: "research",
+    label: "Research",
+    description: "Work out what the contract actually is before a tag is proposed.",
+    detail: "Source, deployer, project name, and how it is used on-chain.",
+  },
+  {
+    id: "evaluate",
+    label: "Evaluate",
+    description: "Check Scout policy and whether the address is already tagged.",
+    detail: "Explorer status, excluded types (proxies, ERC-20/721/1155 where they do not pay), duplicate ATR hits.",
+  },
+  {
+    id: "build",
+    label: "Build",
+    description: "Assemble a registry-specific item.json from the seed-first pattern.",
+    detail: "MetaEvidence cross-check, CAIP-10 addresses, required columns only.",
+  },
+  {
+    id: "submit",
+    label: "Submit",
+    description: "Pin the payload, then call addItem on the Gnosis TCR.",
+    detail: "IPFS via x402 ($0.01 USDC on Base). Deposit 51.6 xDAI, returned if accepted.",
+  },
+  {
+    id: "track",
+    label: "Track",
+    description: "Watch the request through the challenge window and map the on-chain verdict.",
+    detail: "84 hours. Challenge, acceptance, or rejection — then PNK if it stands.",
+  },
 ];
 ---
 
-<section class="pipeline" id="pipeline">
-  <p class="pipeline__kicker mono">the loop</p>
-  <div class="pipeline__rail" data-lenis-prevent>
-    {stages.map((stage, i) => (
-      <article class="pipeline__slide" data-stage={stage.id}>
-        <span class="pipeline__idx mono">{String(i + 1).padStart(2, "0")}</span>
-        <h2>{stage.label}</h2>
-        <p class="mono">{stage.hint}</p>
-      </article>
-    ))}
+<section class="pipeline section" id="pipeline">
+  <div class="container">
+    <p class="mono section-kicker">the loop</p>
+    <h2>How a submission is made</h2>
+    <p class="section-lede">
+      Nothing goes on-chain blindly. Each candidate passes six gates — discovery through tracking — and the agent can stop at any of them.
+    </p>
+
+    <ol class="pipeline__list">
+      {stages.map((stage, i) => (
+        <li class="pipeline__stage" id={stage.id} data-stage={stage.id}>
+          <span class="mono pipeline__idx">{String(i + 1).padStart(2, "0")}</span>
+          <div>
+            <h3>{stage.label}</h3>
+            <p>{stage.description}</p>
+            <p class="mono pipeline__detail">{stage.detail}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
   </div>
 </section>
 
 <style>
-  .pipeline {
-    padding: 12vh 0 8vh;
-    background: var(--color-bg);
+  .pipeline__list {
+    list-style: none;
+    margin: 2.5rem 0 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
   }
 
-  .pipeline__kicker {
-    padding: 0 clamp(1.25rem, 4vw, 3.5rem);
-    margin-bottom: 1.5rem;
-    color: var(--color-text-muted);
-  }
-
-  .pipeline__rail {
-    display: flex;
-    gap: 8vw;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 8vw;
-    padding: 0 8vw 2rem;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .pipeline__rail::-webkit-scrollbar {
-    height: 2px;
-  }
-
-  .pipeline__rail::-webkit-scrollbar-thumb {
-    background: var(--color-text);
-  }
-
-  .pipeline__slide {
-    flex: 0 0 auto;
-    min-width: min(78vw, 900px);
-    scroll-snap-align: start;
-  }
-
-  .pipeline__slide h2 {
-    font-size: clamp(4.5rem, 16vw, 12rem);
-    line-height: 0.8;
-    letter-spacing: -0.06em;
+  .pipeline__stage {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .pipeline__idx {
-    display: block;
-    margin-bottom: 0.75rem;
     color: var(--color-accent);
+    padding-top: 0.35rem;
   }
 
-  .pipeline__slide p {
-    margin-top: 1.25rem;
+  .pipeline__stage h3 {
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+    color: var(--color-text);
+  }
+
+  .pipeline__stage p {
+    margin: 0;
+    max-width: 40rem;
+  }
+
+  .pipeline__detail {
+    margin-top: 0.55rem;
     color: var(--color-text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8rem;
   }
 </style>

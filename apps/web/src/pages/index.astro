@@ -2,6 +2,9 @@
 import Base from "../layouts/Base.astro";
 import Nav from "../components/Nav.astro";
 import Hero from "../components/Hero.astro";
+import Pipeline from "../components/Pipeline.astro";
+import LiveFeed from "../components/LiveFeed.astro";
+import Field from "../components/Field.astro";
 import Hud from "../components/Hud.astro";
 import Controls from "../components/Controls.astro";
 ---
@@ -9,12 +12,15 @@ import Controls from "../components/Controls.astro";
 <Base title="Srelok — The On-Chain Detective">
   <Nav />
   <Hero />
+  <Pipeline />
+  <LiveFeed />
+  <Field />
   <Hud />
   <Controls />
 
   <footer class="site-footer">
     <div class="container site-footer__inner">
-      <span class="mono">srelok</span>
+      <span class="mono">srelok · kleros scout</span>
       <a href="https://github.com/sneldao/srelok" target="_blank" rel="noopener" class="mono">github</a>
     </div>
   </footer>
