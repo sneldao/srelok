@@ -1,13 +1,5 @@
-# Caddy reverse proxy -> TLS for the Srelok Go daemon.
-#
-# Caddy automatically provisions a Let's Encrypt certificate, so no separate
-# certbot/nginx config is needed. You MUST point a real domain's DNS A record
-# at your VPS IP and replace the placeholder hostname below.
-#
-# Install:  apt install -y caddy   (or the official static binary)
-# Run:      caddy run --config /etc/caddy/Caddyfile
-#
-# The daemon listens on 127.0.0.1:3201 (or :3201); Caddy fronts it over HTTPS.
+# Unused on the live VPS (Coolify Traefik owns 80/443). Kept as a single-host
+# alternate. Live listen is daemon :3200 behind nginx :38471 — see deploy/README.md.
 
 srelok.example.com {
 	reverse_proxy 127.0.0.1:3201

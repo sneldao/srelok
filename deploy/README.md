@@ -1,88 +1,78 @@
-# Deployment — Srelok VPS backend
+# Deployment — Srelok API
 
-The Srelok Go daemon runs on a VPS behind a TLS reverse proxy (Caddy), serving
-both the REST/SSE/WebSocket API and the static Astro build. These files are the
-reference deployment: they were generated for the live box but the values are
-templated — pass the real paths/domain on your own VPS.
+Public entry is HTTPS only. The Astro site is static on Netlify; the Go daemon
+stays on the VPS behind Traefik (TLS) → nginx (SSE) → daemon.
+
+```
+Internet
+  └─ https://api.srelok.trustfall.xyz :443   # Traefik + Let's Encrypt
+       └─ nginx :38471                         # Docker/RFC1918 only — not public
+            └─ srelok-daemon :3200             # loopback / host local
+```
+
+Do **not** allow the nginx port from Anywhere. Public 80/443 belong to the
+box’s existing TLS proxy (Coolify Traefik on the live VPS). `deploy/Caddyfile`
+is an unused alternate if you are not already running Traefik.
 
 ## Layout on the VPS
 
 ```
 /opt/srelok/
-├── apps/daemon/srelok        # compiled Go binary (go build -o srelok .)
-├── apps/web/dist             # Astro static output (npm run build)
-├── packages/pipeline/        # for the discovery cycle (npx tsx ...)
+├── srelok-daemon             # live binary (name may differ from `go build`)
+├── apps/daemon/              # source
+├── apps/web/dist             # optional local static; production UI is Netlify
+├── packages/pipeline/        # discovery cycle (npx tsx ...)
 ├── data/                     # SQLite DB (WAL); git-ignored, writable
-└── .env                      # secrets (PRIVATE_KEY, RPC_*, API keys)
+└── .env                      # secrets — never commit
 ```
 
-## 1. Build & copy
+## 1. Build
 
 ```bash
-# build the daemon binary
 cd apps/daemon && go build -o srelok .
-
-# build the frontend
 cd apps/web && npm install --legacy-peer-deps && npm run build
-
-# then rsync /opt/srelok to the VPS (see .gitignore: /opt/srelok/** is ignored)
 ```
 
-## 2. System user & env
+## 2. Env (git-ignored)
 
 ```bash
-sudo useradd --system --home /opt/srelok --shell /usr/sbin/nologin srelok
-sudo mkdir -p /opt/srelok/data
-sudo chown -R srelok:srelok /opt/srelok
-```
-
-Create `/opt/srelok/.env` (git-ignored — never commit secrets):
-
-```bash
-PORT=3201
+PORT=3200
 PRIVATE_KEY=0x...        # signer for addItem / submissions
 RPC_GNOSIS=https://rpc.gnosischain.com
-# RPC_BASE, RPC_ARBITRUM, ... per chain
 DISCOVERY_INTERVAL=6h
 DISCOVERY_CHAINS=base,arbitrum,optimism,linea,celo
 PIPELINE_DIR=/opt/srelok/packages/pipeline
 STATIC_DIR=/opt/srelok/apps/web/dist
 ```
 
-## 3. Install the service
+## 3. systemd
+
+`deploy/srelok.service` is a hardened template. The live unit may use a
+different `User`, `ExecStart`, and `PORT` — see the private ops runbook
+(not in git).
 
 ```bash
-sudo cp deploy/srelok.service /etc/systemd/system/
-sudo systemctl daemon-reload
 sudo systemctl enable --now srelok
-sudo systemctl status srelok        # check health
-curl -s http://127.0.0.1:3201/api/health
+curl -s http://127.0.0.1:3200/api/health
 ```
 
-## 4. TLS (Coolify Traefik on this VPS)
+## 4. TLS + firewall
 
-Port 80/443 are owned by Coolify’s Traefik (`coolify-proxy`), not Caddy.
-The daemon listens on `:3200`; nginx on `:3201` (SSE buffering off) is the
-upstream. Traefik terminates HTTPS for `api.srelok.trustfall.xyz`.
+1. DNS A: `api.srelok.trustfall.xyz` → VPS (DNS-only if using Cloudflare).
+2. Install `deploy/nginx-srelok.conf` (listen **38471**).
+3. Install `deploy/traefik-srelok.yaml` into the Traefik file-provider dir.
+4. UFW: allow **38471/tcp from 10.0.0.0/8 only**. Do not allow it from Anywhere.
+5. Netlify `PUBLIC_API_URL=https://api.srelok.trustfall.xyz` (`netlify.toml`).
 
 ```bash
-# DNS A: api.srelok.trustfall.xyz → VPS IP (grey-cloud / DNS-only)
-
-sudo cp deploy/nginx-srelok.conf /etc/nginx/sites-available/srelok
-sudo ln -sfn /etc/nginx/sites-available/srelok /etc/nginx/sites-enabled/srelok
 sudo nginx -t && sudo systemctl reload nginx
-
-sudo cp deploy/traefik-srelok.yaml /data/coolify/proxy/dynamic/srelok.yaml
-# Traefik file provider watches this dir; cert via HTTP-01
-
 curl -sI https://api.srelok.trustfall.xyz/api/health
 ```
 
-Then set Netlify `PUBLIC_API_URL=https://api.srelok.trustfall.xyz` (see `netlify.toml`)
-so the Astro frontend talks HTTPS end-to-end.
+## 5. Logs
 
-## 5. Logs / rotation
+```bash
+journalctl -u srelok -f
+```
 
-systemd captures daemon logs (`journalctl -u srelok`). For the pipeline's own
-stdout (run as the `srelok` systemd user) keep `LOG_LEVEL=info`. SQLite uses
-WAL, so `data/` needs read-write for the service user (already set above).
+SQLite uses WAL — the service user needs write on `data/`.

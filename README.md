@@ -17,14 +17,19 @@ DISCOVER → RESEARCH → EVALUATE → BUILD → SUBMIT → TRACK
 5. **Submits** to Kleros Scout registries on Gnosis Chain (IPFS upload + addItem tx)
 6. **Tracks** submissions through the challenge window
 
+## Live
+
+- Site: [srelok.netlify.app](https://srelok.netlify.app)
+- API: [api.srelok.trustfall.xyz](https://api.srelok.trustfall.xyz/api/health)
+- Source: [sneldao/srelok](https://github.com/sneldao/srelok)
+
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Astro Frontend (Three.js + GSAP + Lenis)           │
-│  Scroll-driven UI showing the agent at work         │
+│  Astro Frontend (Netlify) — paper UI, live SSE      │
 ├─────────────────────────────────────────────────────┤
-│  Go Daemon (scheduler, REST API, SSE, WebSocket)    │
+│  TLS (Traefik) → nginx → Go daemon (VPS)            │
 ├─────────────────────────────────────────────────────┤
 │  LangGraph Agent (reasoning, strategy, decisions)   │
 ├─────────────────────────────────────────────────────┤
@@ -38,7 +43,7 @@ DISCOVER → RESEARCH → EVALUATE → BUILD → SUBMIT → TRACK
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Astro 7, GSAP (ScrollTrigger), Three.js, Lenis, Tailwind |
+| Frontend | Astro 7, GSAP, Lenis, Tailwind |
 | Backend | Go (net/http, goroutines, WebSocket, SSE) |
 | Agent | LangGraph (TypeScript), OpenAI |
 | Pipeline | TypeScript, viem, x402-fetch |
@@ -60,6 +65,7 @@ packages/
   hooks/            # Safety guards (secrets, linting, validation)
 docs/
   IMPLEMENTATION_PLAN.md
+deploy/             # nginx, Traefik YAML, systemd template
 ```
 
 ## Quick Start

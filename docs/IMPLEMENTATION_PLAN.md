@@ -438,11 +438,11 @@ CREATE TABLE rewards (
 ### Phase 6: Integration & Deploy (Days 13-15)
 
 - [x] Wire Go daemon → LangGraph → pipeline end-to-end — *discovery → `apps/daemon/agent` spawner → `run-cycle.ts --json` → decisions applied to the candidate queue*
-- [x] Deploy to VPS (Go binary + Astro static output) — *backend live at http://144.202.117.160:3201, frontend auto-deployed via Netlify*
-- [ ] TLS certificate (Let's Encrypt) — *backend still on plain HTTP / raw IP*
-- [ ] Systemd service for Go daemon
-- [ ] First live discovery cycle
-- [ ] Monitoring / alerting (uptime, RPC health)
+- [x] Deploy to VPS (Go binary) — *API at https://api.srelok.trustfall.xyz; frontend auto-deployed via Netlify*
+- [x] TLS certificate (Let's Encrypt via Coolify Traefik)
+- [x] Systemd service for Go daemon
+- [x] First live discovery cycle — *scheduler has run; candidate yield still thin*
+- [x] Monitoring / alerting (uptime, RPC health) — *GET /api/health probes Gnosis RPC + IPFS gateway*
 
 ### Phase 7: Hackathon Submission (Days 15-16)
 
@@ -452,13 +452,13 @@ CREATE TABLE rewards (
 - [x] Ensure `.kiro/` directory is in the repo
 - [ ] Submit via Google Form
 
-## Progress Status (updated 2026-08-16)
+## Progress Status (updated 2026-08-17)
 
-Phases 1–5 are effectively complete and the architecture is deployed (frontend auto-deploys via Netlify; the Go daemon is live at `http://144.202.117.160:3201`). Remaining before submission:
+Frontend is on Netlify (`srelok.netlify.app`); the daemon is on systemd behind Traefik TLS at `https://api.srelok.trustfall.xyz`. Remaining before submission:
 
 1. **Finish the loop (pipeline)** — done: challenge-window scanning (`src/challenge/`) + the "already in registry" check now use a configurable Curate subgraph client (`src/utils/subgraph.ts`) and the scout-api; ERC-20/721/1155/EIP-1167 detection shipped; `checkCompliance` runs per-registry policy checks (ATR tags, token metadata/decimals/URLs, CDN domain + visual proof, ATQ repository); and submission tracking close-out (`src/track/`) reads live `getItemInfo`/`getRequestInfo` then dry-run-simulates `executeRequest` when the challenge window elapses with no dispute. *(Set `SCOUT_SUBGRAPH_URL` to activate the subgraph path. scout-api uses `{ addresses, chains }` string arrays; ATR-only, advisory on failure. `npm run track [-- --execute]` / `npm run status -- --live`.)*
 2. **Wiring** — done: after each chain's discovery the daemon's new `apps/daemon/agent` package spawns the LangGraph agent, feeds candidates via `run-cycle.ts --candidates <file> --json`, and applies approve/queue/reject back to the candidate queue. Runs only when `OPENAI_API_KEY` is present (`AGENT_ENABLED=false` forces off).
-3. **Ops** — TLS for the VPS backend and a systemd unit. (Health monitoring is now real: `GET /api/health` probes the Gnosis RPC via `eth_blockNumber` and the IPFS gateway via `/health`, reporting `healthy`/`degraded`.)
+3. **Ops** — done: HTTPS API, systemd, health probes. Nginx `:38471` is Docker/RFC1918-only; public entry is 443.
 4. **Submission artifacts** — record the demo video and fill the Google Form.
 
 > Note: `POST /api/discover` now triggers a real discovery cycle, and the WebSocket handler applies operator approve/reject decisions — the human-in-the-loop gate is wired end-to-end (both WS and REST).

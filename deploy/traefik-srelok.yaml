@@ -1,6 +1,6 @@
 # Coolify Traefik file provider — TLS for the Srelok API.
 # Installed on the VPS at /data/coolify/proxy/dynamic/srelok.yaml
-# Upstream is host nginx :3201 → srelok-daemon :3200
+# Upstream is host nginx :38471 → srelok-daemon :3200
 
 http:
   routers:
@@ -28,4 +28,4 @@ http:
       loadBalancer:
         passHostHeader: true
         servers:
-          - url: "http://host.docker.internal:3201"
+          - url: "http://host.docker.internal:38471"

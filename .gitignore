@@ -9,6 +9,7 @@ apps/web/dist/
 # Environment
 .env
 packages/pipeline/.env
+ops.md
 
 # Data
 packages/pipeline/data/cache/

@@ -1,7 +1,7 @@
 [Unit]
 # Srelok daemon — Kleros Scout AI curation agent
 Description=Srelok daemon (Go API, scheduler, WebSocket, SSE)
-# Start after networking + the TLS reverse proxy (Caddy) is up
+# Start after networking. TLS is terminated in front of this process (Traefik).
 After=network-online.target
 Wants=network-online.target
 
