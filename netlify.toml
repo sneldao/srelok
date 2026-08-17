@@ -5,4 +5,4 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  PUBLIC_API_URL = "http://144.202.117.160:3201"
+  PUBLIC_API_URL = "https://api.srelok.trustfall.xyz"

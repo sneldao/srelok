@@ -59,21 +59,27 @@ sudo systemctl status srelok        # check health
 curl -s http://127.0.0.1:3201/api/health
 ```
 
-## 4. TLS with Caddy (replaces raw-IP HTTP)
+## 4. TLS (Coolify Traefik on this VPS)
 
-The daemon currently runs on plain HTTP at `http://<VPS-IP>:3201`. To get a
-Let's Encrypt cert you need a **real domain** pointing (DNS A record) at the
-VPS IP — Let's Encrypt won't issue for a bare IP address. With a domain set:
+Port 80/443 are owned by Coolify’s Traefik (`coolify-proxy`), not Caddy.
+The daemon listens on `:3200`; nginx on `:3201` (SSE buffering off) is the
+upstream. Traefik terminates HTTPS for `api.srelok.trustfall.xyz`.
 
 ```bash
-sudo apt install -y caddy
-sudo cp deploy/Caddyfile /etc/caddy/Caddyfile   # edit hostname to your domain
-sudo systemctl enable --now caddy
-curl -s https://your.domain/api/health
+# DNS A: api.srelok.trustfall.xyz → VPS IP (grey-cloud / DNS-only)
+
+sudo cp deploy/nginx-srelok.conf /etc/nginx/sites-available/srelok
+sudo ln -sfn /etc/nginx/sites-available/srelok /etc/nginx/sites-enabled/srelok
+sudo nginx -t && sudo systemctl reload nginx
+
+sudo cp deploy/traefik-srelok.yaml /data/coolify/proxy/dynamic/srelok.yaml
+# Traefik file provider watches this dir; cert via HTTP-01
+
+curl -sI https://api.srelok.trustfall.xyz/api/health
 ```
 
-Then update `PUBLIC_API_URL` (in `apps/web` / Netlify) from the raw IP to
-`https://your.domain`, so the Astro frontend talks HTTPS end-to-end.
+Then set Netlify `PUBLIC_API_URL=https://api.srelok.trustfall.xyz` (see `netlify.toml`)
+so the Astro frontend talks HTTPS end-to-end.
 
 ## 5. Logs / rotation
 
