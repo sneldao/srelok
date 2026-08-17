@@ -18,13 +18,4 @@ import Controls from "../components/Controls.astro";
       <a href="https://github.com/sneldao/srelok" target="_blank" rel="noopener" class="mono">github</a>
     </div>
   </footer>
-
-  <script>
-    import { initMosaic } from "../lib/mosaic";
-    import { initTelescope } from "../lib/telescope";
-
-    const canvas = document.getElementById("c") as HTMLCanvasElement | null;
-    if (canvas) initMosaic(canvas);
-    initTelescope();
-  </script>
 </Base>

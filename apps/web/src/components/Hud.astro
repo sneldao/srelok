@@ -1,21 +1,26 @@
 ---
 /**
- * SSE → HUD + mosaic pulse. No section of its own.
+ * SSE → rim HUD. Lives as an Astro script island; markup stays in Hero.
  */
 ---
 
 <script>
-  import gsap from "gsap";
   import { prefersReducedMotion } from "../lib/gsap/init";
-  import { pulseField } from "../lib/mosaic";
 
   const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
   const feedEl = document.getElementById("hud-feed");
+  const hero = document.querySelector<HTMLElement>(".hero");
 
   const labels: Record<string, string> = {
     candidate_found: "found",
     submission_complete: "submitted",
     discovery_started: "scan",
+  };
+
+  const verbFor: Record<string, string> = {
+    candidate_found: "discover",
+    discovery_started: "discover",
+    submission_complete: "submit",
   };
 
   function tick(data: {
@@ -30,9 +35,18 @@
     const label = labels[data.type] || data.type.replace(/_/g, " ");
     feedEl.textContent = [chain, label, addr, data.name].filter(Boolean).join(" · ");
 
+    const verb = verbFor[data.type];
+    if (hero && verb) {
+      hero.classList.add("is-live");
+      hero.querySelectorAll("[data-verb]").forEach((el) => {
+        el.classList.toggle("is-on", el.getAttribute("data-verb") === verb);
+      });
+    }
+
     if (!prefersReducedMotion()) {
-      pulseField();
-      gsap.fromTo(feedEl, { autoAlpha: 0.3 }, { autoAlpha: 1, duration: 0.2, ease: "power2.out" });
+      feedEl.classList.remove("is-flash");
+      void feedEl.offsetWidth;
+      feedEl.classList.add("is-flash");
     }
   }
 

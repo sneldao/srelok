@@ -1,6 +1,7 @@
 ---
 /**
- * The instrument: paper, aperture, verbs inside the hole, HUD on the rim.
+ * Opening case file: name, one line, six steps, live rim.
+ * Type sits on paper. Emphasis is CSS, not a canvas mask.
  */
 const verbs = [
   { id: "discover", label: "Discover" },
@@ -12,18 +13,24 @@ const verbs = [
 ];
 ---
 
-<section class="hero" id="hero" style="--progress: 0">
-  <div class="hero__paper" aria-hidden="true"></div>
-
-  <div class="hero__verbs" aria-hidden="true">
-    {verbs.map((v) => (
-      <p class="hero__verb" data-verb={v.id}>{v.label}</p>
-    ))}
-  </div>
-
+<section class="hero" id="hero">
   <div class="hero__copy">
+    <p class="mono hero__kicker">
+      <span class="status-dot status-dot--accepted"></span>
+      gnosis · scout
+    </p>
     <h1>Srelok</h1>
+    <p class="hero__lede">Autonomous curation for Kleros Scout registries.</p>
   </div>
+
+  <ol class="hero__steps">
+    {verbs.map((v, i) => (
+      <li class="hero__step" data-verb={v.id} style={`--i: ${i}`}>
+        <span class="mono hero__idx">{String(i + 1).padStart(2, "0")}</span>
+        <span class="hero__label">{v.label}</span>
+      </li>
+    ))}
+  </ol>
 
   <div class="hero__hud">
     <span class="mono" id="hud-feed">awaiting</span>
@@ -34,88 +41,146 @@ const verbs = [
 <style>
   .hero {
     position: relative;
-    height: 100vh;
-    --r: calc(16vmin + (var(--progress) * 120vmin));
-  }
-
-  .hero__paper {
-    position: absolute;
-    inset: 0;
-    background: var(--color-bg);
-    -webkit-mask-image: radial-gradient(
-      circle at 50% 46%,
-      transparent var(--r),
-      #000 calc(var(--r) + 1.5px)
-    );
-    mask-image: radial-gradient(
-      circle at 50% 46%,
-      transparent var(--r),
-      #000 calc(var(--r) + 1.5px)
-    );
-    pointer-events: none;
-  }
-
-  .hero__verbs {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
+    min-height: 100svh;
     display: grid;
-    place-items: center;
-    pointer-events: none;
-    clip-path: circle(var(--r) at 50% 46%);
+    grid-template-rows: 1fr auto auto;
+    padding: 6.5rem clamp(1.25rem, 4vw, 3.5rem) 1.75rem;
+    gap: 2.5rem;
   }
 
-  .hero__verb {
-    grid-area: 1 / 1;
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(4rem, 16vw, 13rem);
-    font-weight: 600;
-    line-height: 0.8;
-    letter-spacing: -0.07em;
-    color: #f1ead8;
-    opacity: 0;
-    transform: scale(0.92);
-    transition:
-      opacity 0.35s var(--ease-out),
-      transform 0.35s var(--ease-out);
-  }
-
-  .hero__verb.is-on {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .hero__copy {
-    position: absolute;
-    left: clamp(1.25rem, 4vw, 3.5rem);
-    bottom: 8vh;
-    z-index: 2;
+  .hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
     color: var(--color-text);
-    pointer-events: none;
-    opacity: calc(1 - var(--progress) * 1.4);
   }
 
   .hero h1 {
     margin: 0;
+    color: var(--color-text);
+  }
+
+  .hero__lede {
+    margin: 1rem 0 0;
+    max-width: 22rem;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+  }
+
+  .hero__steps {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.15rem 2rem;
+    margin: 0;
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--color-border);
+    max-width: 36rem;
+  }
+
+  .hero__step {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr;
+    align-items: baseline;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0.45rem 0;
+    color: var(--color-text);
+    opacity: 0.3;
+    animation: step-on 18s calc(var(--i) * -3s) infinite;
+  }
+
+  .hero__idx {
+    color: var(--color-accent);
+  }
+
+  .hero__label {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 3.2vw, 2.15rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  .hero.is-live .hero__step {
+    animation: none;
+    opacity: 0.3;
+  }
+
+  .hero.is-live .hero__step.is-on {
+    opacity: 1;
   }
 
   .hero__hud {
-    position: absolute;
-    left: clamp(1.25rem, 4vw, 3.5rem);
-    right: clamp(1.25rem, 4vw, 3.5rem);
-    bottom: 2.4rem;
-    z-index: 2;
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
     color: var(--color-text);
-    mix-blend-mode: difference;
-    color: #f1ead8;
   }
 
-  .hero.is-wide .hero__hud {
-    mix-blend-mode: normal;
-    color: #f1ead8;
+  #hud-feed.is-flash {
+    animation: flash 0.55s var(--ease-out);
+  }
+
+  @keyframes step-on {
+    0%,
+    12% {
+      opacity: 1;
+    }
+    16.6%,
+    100% {
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes flash {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr minmax(16rem, 22rem);
+      grid-template-rows: 1fr auto;
+      align-items: end;
+      column-gap: 3rem;
+    }
+
+    .hero__copy {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
+    }
+
+    .hero__steps {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+      grid-template-columns: 1fr;
+      max-width: none;
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .hero__hud {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__step {
+      animation: none;
+      opacity: 1;
+    }
   }
 </style>

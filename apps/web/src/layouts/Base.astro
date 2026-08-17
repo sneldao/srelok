@@ -15,26 +15,17 @@ const { title = "Srelok", description = "The on-chain detective — autonomous A
     <meta name="description" content={description} />
     <title>{title}</title>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <!-- Mosaic field (behind the paper plane) -->
-    <div id="fixed-bg">
-      <canvas id="c"></canvas>
-    </div>
-
-    <!-- Main content -->
     <div class="content">
       <slot />
     </div>
 
-    <!-- Global scripts -->
     <script>
       import "../lib/gsap/init.ts";
       import "../lib/smooth-scroll.ts";

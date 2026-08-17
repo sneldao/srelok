@@ -7,7 +7,7 @@
   --color-surface: #fffaf0;
   --color-border: #d9d0b8;
   --color-text: #191611;
-  --color-text-muted: #6b6456;
+  --color-text-muted: #4f4a40;
   --color-accent: #0d8f5b;
   --color-accent-ink: #f1ead8;
   --color-success: #0d8f5b;
@@ -54,6 +54,12 @@ html {
 
 body {
   background-color: var(--color-bg);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--color-text) 9%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 28px 28px;
   color: var(--color-text);
   font-family: var(--font-sans);
   line-height: 1.5;
@@ -87,9 +93,9 @@ h3, .h3 {
 }
 
 h1, .h1 {
-  font-size: clamp(3.5rem, 14vw, 11rem);
-  line-height: 0.85;
-  letter-spacing: -0.05em;
+  font-size: clamp(2.75rem, 8vw, 6.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
 }
 
 h2, .h2 {
@@ -164,31 +170,6 @@ p, .body {
 .status-dot--submitted { background: var(--chain-base); }
 .status-dot--accepted { background: var(--color-success); }
 .status-dot--challenged { background: var(--color-error); }
-
-#fixed-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: var(--color-field);
-}
-
-#c {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  aspect-ratio: 1;
-  width: auto;
-  height: 100%;
-}
-
-@media (min-aspect-ratio: 1) {
-  #c {
-    width: 100%;
-    height: auto;
-  }
-}
 
 .content {
   position: relative;
