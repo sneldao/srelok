@@ -83,6 +83,11 @@ html.lenis body {
   overflow: hidden;
 }
 
+html.nav-open,
+html.nav-open body {
+  overflow: hidden;
+}
+
 h1, .h1,
 h2, .h2,
 h3, .h3 {
@@ -221,6 +226,11 @@ p, .body {
 
 .site-footer a:hover {
   color: var(--color-text);
+}
+
+.site-footer__links {
+  display: flex;
+  gap: 1.25rem;
 }
 
 ::selection {

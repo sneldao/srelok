@@ -1,21 +1,88 @@
 ---
 const links = [
-  { href: "#hero", label: "Brief" },
-  { href: "#pipeline", label: "Pipeline" },
-  { href: "#feed", label: "Activity" },
-  { href: "#field", label: "Field" },
-  { href: "#controls", label: "Operator" },
+  { href: "#hero", label: "Brief", for: "the case" },
+  { href: "#pipeline", label: "Gates", for: "Scout’s quality" },
+  { href: "#feed", label: "Evidence", for: "the agent at work" },
+  { href: "#field", label: "Pools", for: "explorers + PNK" },
+  { href: "#controls", label: "Hand", for: "the operator" },
 ];
 ---
 
 <header class="nav">
   <a class="nav__mark mono" href="#hero">srelok</a>
-  <nav class="nav__links" aria-label="Page">
-    {links.map((l) => (
-      <a class="nav__link mono" href={l.href}>{l.label}</a>
-    ))}
-  </nav>
+  <button
+    class="nav__toggle mono"
+    type="button"
+    id="nav-toggle"
+    aria-expanded="false"
+    aria-controls="nav-panel"
+  >
+    menu
+  </button>
 </header>
+
+<nav class="nav__panel" id="nav-panel" aria-hidden="true" aria-label="Page">
+  <ul class="nav__list">
+    {links.map((l) => (
+      <li>
+        <a class="nav__link" href={l.href}>
+          <span class="nav__link-name">{l.label}</span>
+          <span class="nav__link-for mono">{l.for}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<script>
+  import gsap from "gsap";
+  import { prefersReducedMotion } from "../lib/gsap/init";
+
+  const toggle = document.getElementById("nav-toggle") as HTMLButtonElement | null;
+  const panel = document.getElementById("nav-panel");
+  if (toggle && panel) {
+    const collapsed = "polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%)";
+    const openPoly = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+    gsap.set(panel, { clipPath: collapsed });
+
+    let open = false;
+
+    function setOpen(next: boolean) {
+      open = next;
+      toggle!.setAttribute("aria-expanded", String(open));
+      toggle!.textContent = open ? "close" : "menu";
+      panel!.setAttribute("aria-hidden", String(!open));
+      document.body.classList.toggle("nav-open", open);
+
+      if (open) document.documentElement.classList.add("nav-open");
+      else document.documentElement.classList.remove("nav-open");
+
+      if (prefersReducedMotion()) {
+        gsap.set(panel, { clipPath: open ? openPoly : collapsed });
+        gsap.set(".nav__link", { y: 0, autoAlpha: open ? 1 : 0 });
+        return;
+      }
+
+      if (open) {
+        gsap.to(panel, { clipPath: openPoly, duration: 0.72, ease: "expo.out" });
+        gsap.fromTo(
+          ".nav__link",
+          { y: 36, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 0.5, stagger: 0.05, ease: "expo.out", delay: 0.12 }
+        );
+      } else {
+        gsap.to(".nav__link", { y: -12, autoAlpha: 0, duration: 0.22, ease: "expo.out" });
+        gsap.to(panel, { clipPath: collapsed, duration: 0.5, ease: "expo.out" });
+      }
+    }
+
+    toggle.addEventListener("click", () => setOpen(!open));
+    panel.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && open) setOpen(false);
+    });
+  }
+</script>
 
 <style>
   .nav {
@@ -23,16 +90,17 @@ const links = [
     top: 0;
     left: 0;
     right: 0;
-    z-index: 40;
+    z-index: 50;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
     padding: 1rem clamp(1.25rem, 4vw, 3.5rem);
-    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text);
+    pointer-events: none;
+  }
+
+  .nav__mark,
+  .nav__toggle {
+    pointer-events: auto;
   }
 
   .nav__mark {
@@ -40,19 +108,60 @@ const links = [
     color: var(--color-text);
   }
 
-  .nav__links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.85rem 1.15rem;
+  .nav__toggle {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--color-text);
+    min-height: 44px;
+    padding: 0 0.15rem;
+  }
+
+  .nav__panel {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: grid;
+    place-items: center;
+    background: var(--color-text);
+    color: var(--color-bg);
+    clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+  }
+
+  .nav__list {
+    list-style: none;
+    text-align: center;
   }
 
   .nav__link {
+    display: block;
+    color: var(--color-bg);
     text-decoration: none;
-    color: var(--color-text-muted);
+    padding: 0.2em 0;
   }
 
-  .nav__link:hover {
-    color: var(--color-text);
+  .nav__link-name {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 7vw, 5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+
+  .nav__link-for {
+    display: block;
+    margin-top: 0.35rem;
+    color: #7dcea0;
+    letter-spacing: 0.08em;
+  }
+
+  .nav__link:hover .nav__link-name {
+    opacity: 0.72;
+  }
+
+  :global(body.nav-open) .nav__mark,
+  :global(body.nav-open) .nav__toggle {
+    color: var(--color-bg);
   }
 </style>

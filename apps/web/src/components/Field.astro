@@ -1,9 +1,9 @@
 ---
 const registries = [
-  { key: "atr", label: "Address Tags", pool: "100,000", max: "500 PNK", contract: "0x66260C69…" },
-  { key: "tokens", label: "Token Registry", pool: "100,000", max: "500 PNK", contract: "0xeE1502e2…" },
-  { key: "cdn", label: "Contract Domains", pool: "100,000", max: "500 PNK", contract: "0x957A53A9…" },
-  { key: "atq", label: "Address Tag Queries", pool: "60,000", max: "pool share", contract: "0xAe6aaed5…" },
+  { key: "atr", label: "Address Tags", serves: "Explorers", pool: "100,000", max: "500 PNK", contract: "0x66260C69…" },
+  { key: "tokens", label: "Token Registry", serves: "Wallets", pool: "100,000", max: "500 PNK", contract: "0xeE1502e2…" },
+  { key: "cdn", label: "Contract Domains", serves: "Projects", pool: "100,000", max: "500 PNK", contract: "0x957A53A9…" },
+  { key: "atq", label: "Address Tag Queries", serves: "Tooling", pool: "60,000", max: "pool share", contract: "0xAe6aaed5…" },
 ];
 
 const chains = [
@@ -22,41 +22,50 @@ const chains = [
 ];
 
 const facts = [
-  { label: "Submission deposit", value: "51.6 xDAI", note: "Returned in full if the item is accepted after 84 hours." },
-  { label: "IPFS pin", value: "$0.01 USDC", note: "Paid on Base through the x402 gateway, per payload." },
-  { label: "Challenge window", value: "84 hours", note: "The agent tracks getItemInfo / getRequestInfo and maps the verdict." },
+  { label: "Capital at risk", value: "51.6 xDAI", note: "The operator’s deposit. Returned in full if Scout accepts after 84 hours." },
+  { label: "Cost to name one", value: "$0.01 USDC", note: "IPFS pin on Base via x402 — paid so explorers can read the payload." },
+  { label: "When PNK vests", value: "84 hours", note: "getItemInfo / getRequestInfo. No challenge, then the pool pays the operator." },
 ];
 ---
 
 <section class="field section" id="field">
   <div class="container">
-    <p class="mono section-kicker">coverage</p>
-    <h2>Four registries, twelve chains</h2>
+    <p class="mono section-kicker">the beat</p>
+    <h2>Twelve explorers. Four pools. One well.</h2>
     <p class="section-lede">
-      Submissions land on Light Generalised TCRs on Gnosis. Discovery runs on the chains Scout actually pays for. Monthly pools are 360,000 PNK across ATR, Tokens, CDN, and ATQ.
+      The lens is the untagged field — hover it like a loupe over the chains Scout pays for. The number beside it is the operator’s take. The table is who else gets something when an item stands: explorers, wallets, projects, tooling.
     </p>
 
-    <div class="field__earned">
-      <span class="mono">earned to date</span>
-      <p>
-        <span class="field__amount tabular" id="total-pnk">0</span>
-        <span class="mono">PNK</span>
-      </p>
+    <div class="field__stage">
+      <div class="field__lens">
+        <div class="field__well" id="field-well">
+          <canvas id="lens" width="900" height="900"></canvas>
+        </div>
+        <p class="mono field__lens-cap">untagged contracts, twelve explorers</p>
+      </div>
+
+      <div class="field__earned">
+        <span class="mono">operator take · if Scout accepts</span>
+        <p>
+          <span class="field__amount tabular" id="total-pnk">0</span>
+          <span class="mono">PNK</span>
+        </p>
+      </div>
     </div>
 
     <div class="field__table" role="table">
       <div class="field__row field__row--head mono" role="row">
         <span>Registry</span>
+        <span>Serves</span>
         <span>Pool / month</span>
         <span>Cap</span>
-        <span>Gnosis</span>
       </div>
       {registries.map((reg) => (
         <div class="field__row" role="row">
           <span>{reg.label}</span>
+          <span>{reg.serves}</span>
           <span class="mono">{reg.pool}</span>
           <span class="mono">{reg.max}</span>
-          <span class="mono">{reg.contract}</span>
         </div>
       ))}
     </div>
@@ -79,9 +88,64 @@ const facts = [
   </div>
 </section>
 
+<script>
+  import gsap from "gsap";
+  import { prefersReducedMotion } from "../lib/gsap/init";
+  import { initMosaic } from "../lib/mosaic";
+
+  const canvas = document.getElementById("lens") as HTMLCanvasElement | null;
+  if (canvas) initMosaic(canvas);
+
+  const well = document.getElementById("field-well");
+  if (well && !prefersReducedMotion()) {
+    gsap.fromTo(
+      well,
+      { scale: 0.84 },
+      {
+        scale: 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: well,
+          start: "top 85%",
+          end: "center 45%",
+          scrub: 0.45,
+        },
+      }
+    );
+  }
+</script>
+
 <style>
-  .field__earned {
-    margin: 2.25rem 0 2rem;
+  .field__stage {
+    display: grid;
+    gap: 2rem;
+    margin: 2.5rem 0 2.25rem;
+    align-items: center;
+  }
+
+  .field__lens {
+    justify-self: start;
+  }
+
+  .field__well {
+    width: min(22rem, 78vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--color-field);
+    box-shadow: 0 0 0 1px var(--color-border), 0 0 0 10px var(--color-bg), 0 0 0 11px var(--color-border);
+    transform-origin: center;
+  }
+
+  .field__well canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .field__lens-cap {
+    margin: 0.85rem 0 0;
+    color: var(--color-text-muted);
   }
 
   .field__earned p {
@@ -157,21 +221,31 @@ const facts = [
     font-size: 0.92rem;
   }
 
+  @media (min-width: 900px) {
+    .field__stage {
+      grid-template-columns: auto 1fr;
+      column-gap: 3.5rem;
+    }
+  }
+
   @media (max-width: 800px) {
     .field__row {
       grid-template-columns: 1fr 1fr;
     }
 
-    .field__row span:nth-child(n + 3) {
-      display: none;
-    }
-
+    .field__row span:nth-child(n + 3),
     .field__row--head span:nth-child(n + 3) {
       display: none;
     }
 
     .field__facts {
       grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .field__well {
+      transform: none;
     }
   }
 </style>

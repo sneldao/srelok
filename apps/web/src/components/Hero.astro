@@ -1,11 +1,26 @@
 ---
 const steps = [
-  { id: "discover", label: "Discover", hint: "untagged contracts" },
-  { id: "research", label: "Research", hint: "source · deployer" },
-  { id: "evaluate", label: "Evaluate", hint: "policy · explorer" },
-  { id: "build", label: "Build", hint: "item.json" },
-  { id: "submit", label: "Submit", hint: "ipfs → addItem" },
-  { id: "track", label: "Track", hint: "84h window" },
+  { id: "discover", label: "Discover", hint: "untagged → named" },
+  { id: "research", label: "Research", hint: "no guessing" },
+  { id: "evaluate", label: "Evaluate", hint: "protects the pool" },
+  { id: "build", label: "Build", hint: "MetaEvidence" },
+  { id: "submit", label: "Submit", hint: "deposit at risk" },
+  { id: "track", label: "Track", hint: "PNK if it stands" },
+];
+
+const docket = [
+  {
+    who: "Explorers",
+    outcome: "A human name where the scan only showed a hex.",
+  },
+  {
+    who: "Kleros Scout",
+    outcome: "Policy-clean items. Junk never spends the 51.6 xDAI.",
+  },
+  {
+    who: "Operator",
+    outcome: "PNK from the monthly pools if the 84 hours pass.",
+  },
 ];
 ---
 
@@ -13,31 +28,41 @@ const steps = [
   <div class="hero__copy">
     <p class="mono hero__kicker">
       <span class="status-dot status-dot--accepted"></span>
-      agent online · gnosis
+      docket · gnosis · scout
     </p>
-    <h1>The on-chain detective</h1>
+    <h1>Names for the untagged. PNK if they stand.</h1>
     <p class="hero__lede">
-      Srelok is an autonomous agent for the
+      Srelok is the detective on the
       <a href="https://docs.kleros.io/products/scout-earn">Kleros Scout</a>
-      program. It finds untagged contracts across twelve chains, decides what they are, and submits metadata to four registries on Gnosis — earning PNK if the item survives the challenge window.
+      beat. It finds contracts explorers have not labelled, argues what they are against MetaEvidence, and only then calls <span class="mono hero__code">addItem</span> — so Scout stays clean, users can read a chain, and the operator is paid when the challenge window closes.
     </p>
   </div>
 
+  <ol class="hero__docket">
+    {docket.map((row, i) => (
+      <li>
+        <span class="mono hero__docket-idx">{String(i + 1).padStart(2, "0")}</span>
+        <span class="mono hero__docket-who">{row.who}</span>
+        <span class="hero__docket-out">{row.outcome}</span>
+      </li>
+    ))}
+  </ol>
+
   <dl class="hero__stats">
     <div>
-      <dt class="mono">submissions</dt>
+      <dt class="mono">named this cycle</dt>
       <dd class="tabular" id="stat-submissions">0</dd>
     </div>
     <div>
-      <dt class="mono">chains</dt>
+      <dt class="mono">explorers watched</dt>
       <dd class="tabular">12</dd>
     </div>
     <div>
-      <dt class="mono">registries</dt>
+      <dt class="mono">Scout registries</dt>
       <dd class="tabular">4</dd>
     </div>
     <div>
-      <dt class="mono">PNK earned</dt>
+      <dt class="mono">PNK to operator</dt>
       <dd class="tabular" id="hud-pnk">0</dd>
     </div>
   </dl>
@@ -45,7 +70,7 @@ const steps = [
   <ol class="hero__steps">
     {steps.map((s, i) => (
       <li class="hero__step" data-verb={s.id}>
-        <a href="#pipeline">
+        <a href={`#${s.id}`}>
           <span class="mono hero__idx">{String(i + 1).padStart(2, "0")}</span>
           <span class="hero__label">{s.label}</span>
           <span class="hero__hint">{s.hint}</span>
@@ -54,7 +79,7 @@ const steps = [
     ))}
   </ol>
 
-  <p class="hero__hud mono" id="hud-feed">awaiting live signal from the daemon</p>
+  <p class="hero__hud mono" id="hud-feed">awaiting evidence from the daemon</p>
 </section>
 
 <style>
@@ -62,7 +87,6 @@ const steps = [
     display: grid;
     gap: 2.25rem;
     padding: 7rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
-    min-height: 0;
   }
 
   .hero__kicker {
@@ -75,13 +99,13 @@ const steps = [
 
   .hero h1 {
     margin: 0;
-    max-width: 14ch;
+    max-width: 16ch;
     color: var(--color-text);
   }
 
   .hero__lede {
     margin: 1.15rem 0 0;
-    max-width: 38rem;
+    max-width: 40rem;
     font-size: 1.05rem;
     line-height: 1.5;
     color: var(--color-text-muted);
@@ -92,6 +116,43 @@ const steps = [
     text-underline-offset: 0.18em;
   }
 
+  .hero__code {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.9em;
+    color: var(--color-text);
+  }
+
+  .hero__docket {
+    list-style: none;
+    margin: 0;
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--color-border);
+    max-width: 40rem;
+  }
+
+  .hero__docket li {
+    display: grid;
+    grid-template-columns: 2.2rem 7.5rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .hero__docket-idx {
+    color: var(--color-accent);
+  }
+
+  .hero__docket-who {
+    color: var(--color-text);
+  }
+
+  .hero__docket-out {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+  }
+
   .hero__stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -99,7 +160,7 @@ const steps = [
     margin: 0;
     padding: 1.25rem 0 0;
     border-top: 1px solid var(--color-border);
-    max-width: 36rem;
+    max-width: 40rem;
   }
 
   .hero__stats dt {
@@ -174,10 +235,10 @@ const steps = [
 
   @media (min-width: 960px) {
     .hero {
-      grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.9fr);
-      grid-template-rows: auto auto auto;
+      grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.9fr);
+      grid-template-rows: auto auto auto auto;
       column-gap: 3.5rem;
-      row-gap: 2rem;
+      row-gap: 1.75rem;
       padding-top: 8rem;
     }
 
@@ -186,24 +247,41 @@ const steps = [
       grid-row: 1;
     }
 
-    .hero__stats {
+    .hero__docket {
       grid-column: 1;
       grid-row: 2;
+      max-width: none;
+    }
+
+    .hero__stats {
+      grid-column: 1;
+      grid-row: 3;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       max-width: none;
     }
 
     .hero__steps {
       grid-column: 2;
-      grid-row: 1 / span 2;
+      grid-row: 1 / span 3;
       border-top: 0;
+      align-self: start;
     }
 
     .hero__hud {
       grid-column: 1 / -1;
-      grid-row: 3;
+      grid-row: 4;
       padding-top: 0.25rem;
       border-top: 1px solid var(--color-border);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .hero__docket li {
+      grid-template-columns: 2.2rem 1fr;
+    }
+
+    .hero__docket-out {
+      grid-column: 2;
     }
   }
 
