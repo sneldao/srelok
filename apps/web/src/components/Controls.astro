@@ -14,10 +14,7 @@
 
 <section class="controls section" id="controls">
   <div class="container">
-    <h2 data-reveal="heading">Operator Controls</h2>
-    <p data-reveal="paragraph">
-      Review candidates, trigger discovery cycles, and monitor the agent.
-    </p>
+    <h2>Operator</h2>
 
     <div class="controls__grid" data-reveal="group">
       <!-- Candidate Queue -->
@@ -28,8 +25,7 @@
         </div>
         <div class="controls__queue" id="candidate-queue">
           <div class="controls__empty">
-            <p class="mono">No candidates pending review</p>
-            <p>The agent auto-approves high-confidence submissions. Lower confidence items appear here for your decision.</p>
+            <p class="mono">—</p>
           </div>
         </div>
       </div>
@@ -163,6 +159,10 @@
 </script>
 
 <style>
+  .controls h2 {
+    margin-bottom: 2rem;
+  }
+
   .controls__grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -215,13 +215,7 @@
     border-radius: var(--radius-inner);
   }
 
-  .controls__empty p:first-child {
-    margin-bottom: 0.5rem;
-    color: var(--color-text-muted);
-  }
-
-  .controls__empty p:last-child {
-    font-size: 0.8rem;
+  .controls__empty p {
     color: var(--color-text-muted);
   }
 

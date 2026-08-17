@@ -1,0 +1,55 @@
+---
+/**
+ * SSE → HUD + mosaic pulse. No section of its own.
+ */
+---
+
+<script>
+  import gsap from "gsap";
+  import { prefersReducedMotion } from "../lib/gsap/init";
+  import { pulseField } from "../lib/mosaic";
+
+  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+  const feedEl = document.getElementById("hud-feed");
+
+  const labels: Record<string, string> = {
+    candidate_found: "found",
+    submission_complete: "submitted",
+    discovery_started: "scan",
+  };
+
+  function tick(data: {
+    type: string;
+    chain?: string;
+    address?: string;
+    name?: string;
+  }) {
+    if (!feedEl) return;
+    const chain = data.chain || "gno";
+    const addr = data.address ? `${data.address.slice(0, 4)}…${data.address.slice(-3)}` : "";
+    const label = labels[data.type] || data.type.replace(/_/g, " ");
+    feedEl.textContent = [chain, label, addr, data.name].filter(Boolean).join(" · ");
+
+    if (!prefersReducedMotion()) {
+      pulseField();
+      gsap.fromTo(feedEl, { autoAlpha: 0.3 }, { autoAlpha: 1, duration: 0.2, ease: "power2.out" });
+    }
+  }
+
+  function connectFeed() {
+    const src = new EventSource(`${API_BASE}/api/feed`);
+    src.onmessage = (event) => {
+      try {
+        tick(JSON.parse(event.data));
+      } catch {
+        /* ignore */
+      }
+    };
+    src.onerror = () => {
+      src.close();
+      setTimeout(connectFeed, 5000);
+    };
+  }
+
+  if (typeof window !== "undefined") connectFeed();
+</script>

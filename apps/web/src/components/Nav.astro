@@ -1,0 +1,140 @@
+---
+/**
+ * Clip-path overlay nav (Codrops EaseReverseClipMenu DNA).
+ * Open: expo.out from a collapsed polygon. Close: a new expo.out tween
+ * (not timeline.reverse) so the exit stays snappy — GSAP 3.12 has no easeReverse.
+ */
+const links = [
+  { href: "#hero", label: "Lens" },
+  { href: "#controls", label: "Operator" },
+];
+---
+
+<header class="nav">
+  <a class="nav__mark mono" href="#hero">srelok</a>
+  <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="nav-panel" id="nav-toggle">
+    <span class="nav__toggle-label mono">menu</span>
+  </button>
+</header>
+
+<nav class="nav__panel" id="nav-panel" aria-hidden="true">
+  <ul class="nav__list">
+    {links.map((l) => (
+      <li>
+        <a class="nav__link" href={l.href}>{l.label}</a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<script>
+  import gsap from "gsap";
+
+  const toggle = document.getElementById("nav-toggle") as HTMLButtonElement | null;
+  const panel = document.getElementById("nav-panel");
+  if (!toggle || !panel) {
+    /* skip */
+  } else {
+  const collapsed = "polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%)";
+  const openPoly = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+  gsap.set(panel, { clipPath: collapsed });
+
+  let open = false;
+
+  function setOpen(next: boolean) {
+    open = next;
+    toggle!.setAttribute("aria-expanded", String(open));
+    panel!.setAttribute("aria-hidden", String(!open));
+    document.body.classList.toggle("nav-open", open);
+
+    if (open) {
+      gsap.to(panel, { clipPath: openPoly, duration: 0.7, ease: "expo.out" });
+      gsap.fromTo(
+        ".nav__link",
+        { y: 40, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.55, stagger: 0.06, ease: "expo.out", delay: 0.12 }
+      );
+    } else {
+      gsap.to(".nav__link", { y: -16, autoAlpha: 0, duration: 0.25, ease: "expo.out" });
+      gsap.to(panel, { clipPath: collapsed, duration: 0.55, ease: "expo.out" });
+    }
+  }
+
+  toggle.addEventListener("click", () => setOpen(!open));
+  panel.querySelectorAll("a").forEach((a) => {
+    a.addEventListener("click", () => setOpen(false));
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && open) setOpen(false);
+  });
+  }
+</script>
+
+<style>
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem clamp(1.25rem, 4vw, 3.5rem);
+    pointer-events: none;
+  }
+
+  .nav__mark,
+  .nav__toggle {
+    pointer-events: auto;
+  }
+
+  .nav__mark {
+    text-decoration: none;
+    color: inherit;
+    mix-blend-mode: difference;
+    color: #f1ead8;
+  }
+
+  .nav__toggle {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: inherit;
+    mix-blend-mode: difference;
+    color: #f1ead8;
+    min-height: 44px;
+  }
+
+  .nav__panel {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: var(--color-text);
+    color: var(--color-bg);
+    display: grid;
+    place-items: center;
+    clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+  }
+
+  .nav__list {
+    list-style: none;
+    text-align: center;
+  }
+
+  .nav__link {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 10vw, 8rem);
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+    color: inherit;
+    text-decoration: none;
+    padding: 0.15em 0;
+  }
+
+  .nav__link:hover {
+    color: var(--color-accent-ink);
+    opacity: 0.7;
+  }
+</style>

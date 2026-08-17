@@ -1,43 +1,30 @@
 ---
 import Base from "../layouts/Base.astro";
+import Nav from "../components/Nav.astro";
 import Hero from "../components/Hero.astro";
-import Pipeline from "../components/Pipeline.astro";
-import LiveFeed from "../components/LiveFeed.astro";
-import ChainMap from "../components/ChainMap.astro";
-import Rewards from "../components/Rewards.astro";
+import Hud from "../components/Hud.astro";
 import Controls from "../components/Controls.astro";
 ---
 
 <Base title="Srelok — The On-Chain Detective">
+  <Nav />
   <Hero />
-  <Pipeline />
-  <ChainMap />
-  <LiveFeed />
-  <Rewards />
+  <Hud />
   <Controls />
 
-  <!-- Footer -->
   <footer class="site-footer">
     <div class="container site-footer__inner">
-      <span class="mono">srelok v0.1.0 — built with kiro</span>
-      <a href="https://github.com/sneldao/srelok" target="_blank" rel="noopener" class="mono">
-        github ↗
-      </a>
+      <span class="mono">srelok</span>
+      <a href="https://github.com/sneldao/srelok" target="_blank" rel="noopener" class="mono">github</a>
     </div>
   </footer>
 
-  <!-- Scene initialization -->
   <script>
-    import { createChainScene } from "../lib/three/chain-particles";
-    import { initReveals } from "../lib/gsap/reveals";
+    import { initMosaic } from "../lib/mosaic";
+    import { initTelescope } from "../lib/telescope";
 
-    // Initialize Three.js particle scene
-    const canvas = document.getElementById("scene-canvas") as HTMLCanvasElement;
-    if (canvas) {
-      createChainScene(canvas);
-    }
-
-    // Initialize GSAP reveal animations
-    initReveals();
+    const canvas = document.getElementById("c") as HTMLCanvasElement | null;
+    if (canvas) initMosaic(canvas);
+    initTelescope();
   </script>
 </Base>

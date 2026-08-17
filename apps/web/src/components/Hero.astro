@@ -1,121 +1,121 @@
 ---
 /**
- * Scene 1: Hero — The Agent's Pulse
- *
- * Minimal dark environment with Three.js particle field behind.
- * Headline animates in char-by-char. Stats counter below.
+ * The instrument: paper, aperture, verbs inside the hole, HUD on the rim.
  */
+const verbs = [
+  { id: "discover", label: "Discover" },
+  { id: "research", label: "Research" },
+  { id: "evaluate", label: "Evaluate" },
+  { id: "build", label: "Build" },
+  { id: "submit", label: "Submit" },
+  { id: "track", label: "Track" },
+];
 ---
 
-<section class="hero section" id="hero">
-  <div class="container hero__inner">
-    <div class="hero__badge">
-      <span class="status-dot status-dot--accepted"></span>
-      <span class="mono">agent online</span>
-    </div>
+<section class="hero" id="hero" style="--progress: 0">
+  <div class="hero__paper" aria-hidden="true"></div>
 
-    <h1 class="hero__title" data-reveal="heading">
-      Curating the decentralized web
-    </h1>
+  <div class="hero__verbs" aria-hidden="true">
+    {verbs.map((v) => (
+      <p class="hero__verb" data-verb={v.id}>{v.label}</p>
+    ))}
+  </div>
 
-    <p class="hero__subtitle" data-reveal="paragraph">
-      An autonomous AI agent discovering, validating, and submitting on-chain metadata to Kleros Scout registries — earning PNK rewards across 12 chains.
-    </p>
+  <div class="hero__copy">
+    <h1>Srelok</h1>
+  </div>
 
-    <div class="hero__stats" data-reveal="group">
-      <div class="hero__stat" data-reveal="group-item">
-        <span class="hero__stat-value tabular" data-reveal="counter" data-target="0">0</span>
-        <span class="hero__stat-label">submissions</span>
-      </div>
-      <div class="hero__stat" data-reveal="group-item">
-        <span class="hero__stat-value tabular" data-reveal="counter" data-target="12">0</span>
-        <span class="hero__stat-label">chains</span>
-      </div>
-      <div class="hero__stat" data-reveal="group-item">
-        <span class="hero__stat-value tabular" data-reveal="counter" data-target="4">0</span>
-        <span class="hero__stat-label">registries</span>
-      </div>
-      <div class="hero__stat" data-reveal="group-item">
-        <span class="hero__stat-value mono tabular" data-reveal="counter" data-target="0">0</span>
-        <span class="hero__stat-label">PNK earned</span>
-      </div>
-    </div>
+  <div class="hero__hud">
+    <span class="mono" id="hud-feed">awaiting</span>
+    <span class="mono tabular" id="hud-pnk">0 PNK</span>
   </div>
 </section>
 
 <style>
   .hero {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding-top: 10vh;
+    position: relative;
+    height: 100vh;
+    --r: calc(16vmin + (var(--progress) * 120vmin));
   }
 
-  .hero__inner {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  .hero__paper {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg);
+    -webkit-mask-image: radial-gradient(
+      circle at 50% 46%,
+      transparent var(--r),
+      #000 calc(var(--r) + 1.5px)
+    );
+    mask-image: radial-gradient(
+      circle at 50% 46%,
+      transparent var(--r),
+      #000 calc(var(--r) + 1.5px)
+    );
+    pointer-events: none;
   }
 
-  .hero__badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 0.8rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 100px;
-    width: fit-content;
-    opacity: 0;
-    animation: fadeIn 0.45s cubic-bezier(0.23, 1, 0.32, 1) 0.2s forwards;
+  .hero__verbs {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    clip-path: circle(var(--r) at 50% 46%);
   }
 
-  .hero__title {
-    max-width: 900px;
-  }
-
-  .hero__subtitle {
-    max-width: 600px;
-    margin-top: 0.5rem;
-  }
-
-  .hero__stats {
-    display: flex;
-    gap: 3rem;
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .hero__stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .hero__stat-value {
-    font-family: var(--font-mono);
-    font-size: clamp(1.5rem, 3vw, 2.5rem);
+  .hero__verb {
+    grid-area: 1 / 1;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 16vw, 13rem);
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
+    line-height: 0.8;
+    letter-spacing: -0.07em;
+    color: #f1ead8;
+    opacity: 0;
+    transform: scale(0.92);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.35s var(--ease-out);
+  }
+
+  .hero__verb.is-on {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .hero__copy {
+    position: absolute;
+    left: clamp(1.25rem, 4vw, 3.5rem);
+    bottom: 8vh;
+    z-index: 2;
     color: var(--color-text);
+    pointer-events: none;
+    opacity: calc(1 - var(--progress) * 1.4);
   }
 
-  .hero__stat-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted);
+  .hero h1 {
+    margin: 0;
   }
 
-  @keyframes fadeIn {
-    to { opacity: 1; }
+  .hero__hud {
+    position: absolute;
+    left: clamp(1.25rem, 4vw, 3.5rem);
+    right: clamp(1.25rem, 4vw, 3.5rem);
+    bottom: 2.4rem;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--color-text);
+    mix-blend-mode: difference;
+    color: #f1ead8;
   }
 
-  @media (max-width: 768px) {
-    .hero__stats {
-      flex-wrap: wrap;
-      gap: 2rem;
-    }
+  .hero.is-wide .hero__hud {
+    mix-blend-mode: normal;
+    color: #f1ead8;
   }
 </style>

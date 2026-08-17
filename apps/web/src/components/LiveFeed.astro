@@ -1,29 +1,17 @@
 ---
 /**
- * Scene 3: Live Feed — The Agent at Work
- *
- * Real-time feed of agent decisions and submissions.
- * Connected to the Go daemon via Server-Sent Events.
- * New entries animate in with staggered reveals.
+ * Live ticker — SSE still drives it; no section essay.
  */
 ---
 
-<section class="feed section" id="feed">
-  <div class="container">
-    <div class="feed__header">
-      <h2 data-reveal="heading">Live Feed</h2>
-      <div class="feed__status">
-        <span class="status-dot status-dot--accepted"></span>
-        <span class="mono">streaming</span>
-      </div>
-    </div>
-
+<section class="feed" id="feed">
+  <div class="feed__bar">
+    <span class="mono feed__live">
+      <span class="status-dot status-dot--accepted"></span>
+      live
+    </span>
     <div class="feed__list" id="feed-list">
-      <!-- Entries injected by JS via SSE -->
-      <div class="feed__empty" data-reveal="element">
-        <p class="mono">Waiting for agent activity...</p>
-        <p>The agent will populate this feed as it discovers and submits entries.</p>
-      </div>
+      <span class="feed__empty mono">awaiting signal</span>
     </div>
   </div>
 </section>
@@ -45,177 +33,92 @@
     const el = document.createElement("div");
     el.className = "feed__entry";
 
-    const time = new Date(data.timestamp).toLocaleTimeString();
     const chain = data.chain || "gnosis";
-    const addr = data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : "";
-
-    let label = "";
-    let statusClass = "status-dot--pending";
-
-    switch (data.type) {
-      case "candidate_found":
-        label = "Candidate discovered";
-        statusClass = "status-dot--pending";
-        break;
-      case "submission_complete":
-        label = "Submitted on-chain";
-        statusClass = "status-dot--submitted";
-        break;
-      case "discovery_started":
-        label = "Discovery cycle started";
-        statusClass = "status-dot--accepted";
-        break;
-      default:
-        label = data.type.replace(/_/g, " ");
-    }
+    const addr = data.address ? `${data.address.slice(0, 6)}…${data.address.slice(-4)}` : "";
+    const labels: Record<string, string> = {
+      candidate_found: "found",
+      submission_complete: "submitted",
+      discovery_started: "scan",
+    };
+    const label = labels[data.type] || data.type.replace(/_/g, " ");
 
     el.innerHTML = `
-      <div class="feed__entry-dot">
-        <span class="status-dot ${statusClass}"></span>
-      </div>
-      <div class="feed__entry-content">
-        <div class="feed__entry-top">
-          <span class="feed__entry-label">${label}</span>
-          <span class="feed__entry-time mono">${time}</span>
-        </div>
-        <div class="feed__entry-meta">
-          <span class="chain-badge chain-badge--${chain}">${chain}</span>
-          ${addr ? `<span class="mono">${addr}</span>` : ""}
-          ${data.name ? `<span>${data.name}</span>` : ""}
-        </div>
-      </div>
+      <span class="chain-badge chain-badge--${chain}">${chain}</span>
+      <span>${label}</span>
+      ${addr ? `<span class="mono">${addr}</span>` : ""}
+      ${data.name ? `<span>${data.name}</span>` : ""}
     `;
 
-    const empty = feedList?.querySelector(".feed__empty");
-    if (empty) empty.remove();
-
+    feedList?.querySelector(".feed__empty")?.remove();
     feedList?.prepend(el);
-    if (prefersReducedMotion()) {
-      gsap.set(el, { autoAlpha: 1, y: 0 });
-    } else {
-      gsap.fromTo(
-        el,
-        { autoAlpha: 0, y: 8 },
-        { autoAlpha: 1, y: 0, duration: 0.2, ease: "power2.out" }
-      );
+
+    if (!prefersReducedMotion()) {
+      gsap.fromTo(el, { autoAlpha: 0, x: 12 }, { autoAlpha: 1, x: 0, duration: 0.2, ease: "power2.out" });
     }
 
-    // Keep max 20 entries
     const entries = feedList?.querySelectorAll(".feed__entry");
-    if (entries && entries.length > 20) {
-      entries[entries.length - 1].remove();
-    }
+    if (entries && entries.length > 8) entries[entries.length - 1].remove();
   }
 
-  // Connect to SSE
   function connectFeed() {
     const evtSource = new EventSource(`${API_BASE}/api/feed`);
-
-    evtSource.addEventListener("connected", () => {
-      console.log("[Feed] Connected to agent stream");
-    });
-
-    evtSource.addEventListener("heartbeat", () => {
-      // Keep-alive, no action needed
-    });
-
     evtSource.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        createFeedEntry(data);
+        createFeedEntry(JSON.parse(event.data));
       } catch {
-        // Ignore unparseable messages
+        /* ignore */
       }
     };
-
     evtSource.onerror = () => {
-      console.log("[Feed] Connection lost, reconnecting in 5s...");
       evtSource.close();
       setTimeout(connectFeed, 5000);
     };
   }
 
-  // Start on load
-  if (typeof window !== "undefined") {
-    connectFeed();
-  }
+  if (typeof window !== "undefined") connectFeed();
 </script>
 
 <style>
-  .feed__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
+  .feed {
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
   }
 
-  .feed__status {
-    display: flex;
+  .feed__bar {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.5rem;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--color-text-muted);
+    padding: 1rem clamp(1.25rem, 4vw, 3.5rem);
+  }
+
+  .feed__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--color-text);
   }
 
   .feed__list {
     display: flex;
-    flex-direction: column;
-    gap: 0;
-    max-height: 600px;
-    overflow-y: auto;
+    gap: 1.75rem;
+    overflow-x: auto;
+    align-items: center;
+    min-height: 2rem;
   }
 
   .feed__empty {
-    padding: 3rem 2rem;
-    text-align: center;
-    border: 1px dashed var(--color-border);
-    border-radius: 8px;
-  }
-
-  .feed__empty p:first-child {
     color: var(--color-text-muted);
-    margin-bottom: 0.5rem;
   }
 
   .feed__entry {
-    display: grid;
-    grid-template-columns: 1.5rem 1fr;
-    gap: 0.75rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--color-border);
-    align-items: start;
-  }
-
-  .feed__entry-dot {
-    padding-top: 0.35rem;
-  }
-
-  .feed__entry-content {
     display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .feed__entry-top {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-  }
-
-  .feed__entry-label {
+    gap: 0.65rem;
+    white-space: nowrap;
     font-size: 0.9rem;
-    color: var(--color-text);
-  }
-
-  .feed__entry-time {
-    font-size: 0.7rem;
-    color: var(--color-text-muted);
-  }
-
-  .feed__entry-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
+    flex-shrink: 0;
   }
 </style>

@@ -5,13 +5,14 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Syne"', "system-ui", "sans-serif"],
+        display: ['"Fraunces"', "Georgia", "serif"],
         mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
       },
       colors: {
-        bg: "#0b0d0b",
-        surface: "#131615",
-        border: "#252c26",
-        accent: "#3dffa0",
+        bg: "#f1ead8",
+        surface: "#fffaf0",
+        border: "#d9d0b8",
+        accent: "#0d8f5b",
       },
     },
   },
