@@ -1,0 +1,16 @@
+---
+import Base from "../layouts/Base.astro";
+import Controls from "../components/Controls.astro";
+import Live from "../components/Live.astro";
+import { loadDossier } from "../lib/dossier";
+
+const { candidates, health, logs } = await loadDossier();
+---
+
+<Base
+  title="Operator — Srelok"
+  description="Review queue for Scout submissions. Approve only what an explorer should keep."
+>
+  <Controls candidates={candidates} health={health} lastMark={logs[0]} />
+  <Live />
+</Base>

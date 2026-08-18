@@ -1,29 +1,25 @@
+import type { AgentStats } from "./dossier";
+import { API_BASE } from "./dossier";
+
 export type FeedEvent = {
   type: string;
   chain?: string;
   address?: string;
   name?: string;
   timestamp?: string;
+  time?: string;
 };
 
-export type AgentStats = {
-  totalSubmissions: number;
-  accepted: number;
-  challenged: number;
-  pending: number;
-  totalPnkEarned: string;
-  chainsActive: number;
-  candidatesInQueue: number;
-};
-
-const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+export type { AgentStats };
 
 export function connectFeed(onEvent: (event: FeedEvent) => void) {
   const open = () => {
     const src = new EventSource(`${API_BASE}/api/feed`);
     src.onmessage = (message) => {
       try {
-        onEvent(JSON.parse(message.data) as FeedEvent);
+        const data = JSON.parse(message.data) as FeedEvent;
+        if (!data.type || data.type === "heartbeat" || data.type === "connected") return;
+        onEvent(data);
       } catch {
         /* ignore malformed ticks */
       }

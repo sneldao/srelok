@@ -1,87 +1,73 @@
 ---
-const links = [
-  { href: "#hero", label: "Brief", for: "the case" },
-  { href: "#pipeline", label: "Gates", for: "Scout’s quality" },
-  { href: "#feed", label: "Evidence", for: "the agent at work" },
-  { href: "#field", label: "Pools", for: "explorers + PNK" },
-  { href: "#controls", label: "Hand", for: "the operator" },
-];
+import { folio } from "../lib/folio";
 ---
 
-<header class="nav">
-  <a class="nav__mark mono" href="#hero">srelok</a>
-  <button
-    class="nav__toggle mono"
-    type="button"
-    id="nav-toggle"
-    aria-expanded="false"
-    aria-controls="nav-panel"
-  >
-    menu
-  </button>
-</header>
+<div class="nav-shell" transition:persist="nav">
+  <header class="nav">
+    <a class="nav__mark mono" href="/">srelok</a>
+  </header>
 
-<nav class="nav__panel" id="nav-panel" aria-hidden="true" aria-label="Page">
-  <ul class="nav__list">
-    {links.map((l) => (
-      <li>
-        <a class="nav__link" href={l.href}>
-          <span class="nav__link-name">{l.label}</span>
-          <span class="nav__link-for mono">{l.for}</span>
-        </a>
-      </li>
+  <nav class="folio-tabs" aria-label="Folio leaves">
+    {folio.map((l) => (
+      <a class="folio-tabs__leaf" href={l.href} data-astro-prefetch data-leaf={l.leaf}>
+        <span class="folio-tabs__name">{l.tab}</span>
+        <span class="folio-tabs__for">{l.for}</span>
+      </a>
     ))}
-  </ul>
-</nav>
+  </nav>
+</div>
 
 <script>
-  import gsap from "gsap";
-  import { prefersReducedMotion } from "../lib/gsap/init";
+  import { navigate } from "astro:transitions/client";
+  import { normalizePath, walk } from "../lib/folio";
 
-  const toggle = document.getElementById("nav-toggle") as HTMLButtonElement | null;
-  const panel = document.getElementById("nav-panel");
-  if (toggle && panel) {
-    const collapsed = "polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%)";
-    const openPoly = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
-    gsap.set(panel, { clipPath: collapsed });
-
-    let open = false;
-
-    function setOpen(next: boolean) {
-      open = next;
-      toggle!.setAttribute("aria-expanded", String(open));
-      toggle!.textContent = open ? "close" : "menu";
-      panel!.setAttribute("aria-hidden", String(!open));
-      document.body.classList.toggle("nav-open", open);
-
-      if (open) document.documentElement.classList.add("nav-open");
-      else document.documentElement.classList.remove("nav-open");
-
-      if (prefersReducedMotion()) {
-        gsap.set(panel, { clipPath: open ? openPoly : collapsed });
-        gsap.set(".nav__link", { y: 0, autoAlpha: open ? 1 : 0 });
-        return;
-      }
-
-      if (open) {
-        gsap.to(panel, { clipPath: openPoly, duration: 0.72, ease: "expo.out" });
-        gsap.fromTo(
-          ".nav__link",
-          { y: 36, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.5, stagger: 0.05, ease: "expo.out", delay: 0.12 }
-        );
-      } else {
-        gsap.to(".nav__link", { y: -12, autoAlpha: 0, duration: 0.22, ease: "expo.out" });
-        gsap.to(panel, { clipPath: collapsed, duration: 0.5, ease: "expo.out" });
-      }
-    }
-
-    toggle.addEventListener("click", () => setOpen(!open));
-    panel.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && open) setOpen(false);
+  function markCurrent() {
+    const path = normalizePath(location.pathname);
+    document.querySelectorAll<HTMLAnchorElement>(".folio-tabs__leaf").forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      const active = href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`);
+      if (active) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
     });
   }
+
+  let keysBound = false;
+
+  function bindKeys() {
+    if (keysBound) return;
+    keysBound = true;
+
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, select, dialog, [contenteditable]")) return;
+
+      const path = normalizePath(location.pathname);
+      const step = path.startsWith("/gates") ? "/gates" : path;
+      const i = (walk as readonly string[]).indexOf(step);
+      if (i < 0) return;
+
+      if (e.key === "ArrowRight" || e.key === "j") {
+        const next = walk[i + 1];
+        if (next) {
+          e.preventDefault();
+          navigate(next);
+        }
+      }
+      if (e.key === "ArrowLeft" || e.key === "k") {
+        const prev = walk[i - 1];
+        if (prev) {
+          e.preventDefault();
+          navigate(prev);
+        }
+      }
+    });
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    bindKeys();
+    markCurrent();
+  });
 </script>
 
 <style>
@@ -92,76 +78,103 @@ const links = [
     right: 0;
     z-index: 50;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 1rem clamp(1.25rem, 4vw, 3.5rem);
     pointer-events: none;
   }
 
-  .nav__mark,
-  .nav__toggle {
-    pointer-events: auto;
-  }
-
   .nav__mark {
+    pointer-events: auto;
     text-decoration: none;
     color: var(--color-text);
   }
 
-  .nav__toggle {
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    color: var(--color-text);
-    min-height: 44px;
-    padding: 0 0.15rem;
-  }
-
-  .nav__panel {
+  .folio-tabs {
     position: fixed;
-    inset: 0;
-    z-index: 45;
-    display: grid;
-    place-items: center;
-    background: var(--color-text);
-    color: var(--color-bg);
-    clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%);
+    top: 3.35rem;
+    left: 0;
+    right: 0;
+    z-index: 42;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.15rem;
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+    pointer-events: none;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   }
 
-  .nav__list {
-    list-style: none;
+  .folio-tabs__leaf {
+    pointer-events: auto;
+    flex: 1;
+    min-width: 0;
     text-align: center;
-  }
-
-  .nav__link {
-    display: block;
-    color: var(--color-bg);
     text-decoration: none;
-    padding: 0.2em 0;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.55rem 0.2rem 0.5rem;
+    border-bottom: 2px solid transparent;
   }
 
-  .nav__link-name {
+  .folio-tabs__name {
     display: block;
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 7vw, 5rem);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.045em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .nav__link-for {
-    display: block;
-    margin-top: 0.35rem;
-    color: #7dcea0;
-    letter-spacing: 0.08em;
+  .folio-tabs__for {
+    display: none;
   }
 
-  .nav__link:hover .nav__link-name {
-    opacity: 0.72;
+  .folio-tabs__leaf:hover {
+    color: var(--color-text);
   }
 
-  :global(body.nav-open) .nav__mark,
-  :global(body.nav-open) .nav__toggle {
-    color: var(--color-bg);
+  .folio-tabs__leaf[aria-current="page"] {
+    color: var(--color-text);
+    border-bottom-color: var(--color-accent);
+  }
+
+  @media (min-width: 960px) {
+    .folio-tabs {
+      top: 50%;
+      right: 0;
+      left: auto;
+      transform: translateY(-50%);
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.28rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      width: auto;
+    }
+
+    .folio-tabs__leaf {
+      flex: none;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      text-align: start;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-right: 0;
+      padding: 1.15rem 0.4rem;
+      color: var(--color-text);
+    }
+
+    .folio-tabs__leaf[aria-current="page"] {
+      background: var(--color-text);
+      color: var(--color-bg);
+      border-color: var(--color-text);
+      padding-left: 0.65rem;
+    }
+
+    .folio-tabs__leaf[aria-current="page"] .folio-tabs__name {
+      color: var(--color-bg);
+    }
   }
 </style>

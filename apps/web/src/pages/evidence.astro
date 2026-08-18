@@ -1,0 +1,141 @@
+---
+import Base from "../layouts/Base.astro";
+import Live from "../components/Live.astro";
+import {
+  formatWhen,
+  gnosisAddress,
+  gnosisTx,
+  ipfsUrl,
+  loadDossier,
+  shortAddr,
+} from "../lib/dossier";
+
+const { submissions, logs } = await loadDossier();
+---
+
+<Base
+  title="Evidence — Srelok"
+  description="Submissions and agent marks on record. What was found, refused, or sent to Gnosis."
+>
+  <section class="feed section" id="feed">
+    <div class="container">
+      <p class="mono section-kicker">
+        <span class="status-dot status-dot--accepted"></span>
+        carbon copy
+      </p>
+      <h2>The agent, on the record</h2>
+      <p class="section-lede">
+        This is the file, not a ticker. Submissions are addItem attempts on Gnosis. Marks below are the agent’s own log. Live ticks append after this leaf is open.
+      </p>
+
+      <h3 class="feed__h">Submissions</h3>
+      {submissions.length === 0 ? (
+        <p class="feed__empty mono">No submissions on file — the daemon has not called addItem yet.</p>
+      ) : (
+        <div class="feed__list">
+          {submissions.map((s) => (
+            <article class="feed__entry">
+              <span class="mono feed__time">{formatWhen(s.submittedAt)}</span>
+              <span class={`chain-badge chain-badge--${s.chain}`}>{s.chain}</span>
+              <span class="feed__meta">
+                {s.status}
+                {s.tag ? ` · ${s.tag}` : ""}
+                {" · "}
+                <a href={gnosisAddress(s.address)} target="_blank" rel="noopener">{shortAddr(s.address)}</a>
+                {s.txHash && (
+                  <>
+                    {" · "}
+                    <a href={gnosisTx(s.txHash)} target="_blank" rel="noopener">tx</a>
+                  </>
+                )}
+                {s.ipfsCid && (
+                  <>
+                    {" · "}
+                    <a href={ipfsUrl(s.ipfsCid)} target="_blank" rel="noopener">ipfs</a>
+                  </>
+                )}
+              </span>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <h3 class="feed__h">Since this leaf opened</h3>
+      <div class="feed__list" id="live-marks">
+        <p class="feed__empty mono" id="live-empty">Quiet — SSE marks land here.</p>
+      </div>
+
+      <h3 class="feed__h">Agent marks</h3>
+      {logs.length === 0 ? (
+        <p class="feed__empty mono">No agent_logs yet — a discovery cycle writes the first line.</p>
+      ) : (
+        <div class="feed__list">
+          {logs.map((l) => (
+            <article class="feed__entry">
+              <span class="mono feed__time">{formatWhen(l.timestamp)}</span>
+              <span class="mono feed__node">{l.node || "agent"}</span>
+              <span class="feed__meta">
+                {l.action || "mark"}
+                {l.inputSummary ? ` · ${l.inputSummary}` : ""}
+                {l.outputSummary ? ` · ${l.outputSummary}` : ""}
+              </span>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+  <Live />
+</Base>
+
+<style>
+  .feed__h {
+    margin: 2.25rem 0 0;
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .feed__list {
+    margin-top: 0.75rem;
+    border-top: 1px dashed color-mix(in srgb, var(--color-carbon) 35%, var(--color-border));
+  }
+
+  .feed__empty {
+    padding: 1.1rem 0;
+    color: var(--color-text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .feed__list :global(.feed__entry) {
+    display: grid;
+    grid-template-columns: 8.5rem 7rem 1fr;
+    gap: 0.75rem 1rem;
+    align-items: baseline;
+    padding: 0.7rem 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--color-carbon) 28%, var(--color-border));
+    font-size: 0.88rem;
+    color: var(--color-carbon);
+  }
+
+  .feed__list :global(.feed__time),
+  .feed__list :global(.feed__node) {
+    color: color-mix(in srgb, var(--color-carbon) 70%, var(--color-text-muted));
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .feed__meta a,
+  .feed__list :global(.feed__meta) a {
+    color: inherit;
+  }
+
+  @media (max-width: 640px) {
+    .feed__list :global(.feed__entry) {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+  }
+</style>

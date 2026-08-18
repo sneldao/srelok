@@ -1,149 +1,219 @@
 ---
-/**
- * Scene 6: Operator Controls
- *
- * Functional interface for the agent operator:
- * - Candidate review queue (approve/reject)
- * - Manual discovery trigger
- * - Agent status
- *
- * This breaks from the scroll-driven flow intentionally.
- * The contrast signals "you're now in control."
- */
+import type { Candidate, Health, AgentLog } from "../lib/dossier";
+import { shortAddr } from "../lib/dossier";
+
+interface Props {
+  candidates: Candidate[];
+  health: Health | null;
+  lastMark?: AgentLog;
+}
+
+const { candidates, health, lastMark } = Astro.props;
+
+function hours(uptime?: number) {
+  if (uptime == null) return "—";
+  const hrs = Math.floor(uptime / 3600);
+  const mins = Math.floor((uptime % 3600) / 60);
+  return `${hrs}h ${mins}m`;
+}
+
+const stamp = health?.status ?? "unreachable";
 ---
 
-<section class="controls section" id="controls">
+<section class="hand section" id="controls">
   <div class="container">
-    <p class="mono section-kicker">your hand</p>
+    <p class="mono section-kicker">
+      <span class="hand__party" transition:name="party-operator">03</span>
+      your hand
+    </p>
     <h2>Operator</h2>
     <p class="section-lede">
-      High-confidence items go on-chain alone. The rest wait here — because a bad tag costs Scout’s reputation and your 51.6 xDAI until the window closes. Approve only what an explorer should keep.
+      High-confidence items go on-chain alone. The rest wait here — a bad tag costs Scout’s reputation and 51.6 xDAI until the window closes. Sign only what an explorer should keep.
     </p>
 
-    <div class="controls__grid" data-reveal="group">
-      <!-- Candidate Queue -->
-      <div class="controls__panel" data-reveal="group-item">
-        <div class="controls__panel-header">
-          <h3>Review Queue</h3>
-          <span class="controls__badge mono tabular" id="queue-count">0</span>
-        </div>
-        <div class="controls__queue" id="candidate-queue">
-          <div class="controls__empty">
-            <p class="mono">No candidates pending review</p>
-            <p>The queue is the last gate before a deposit. Empty means the agent is either idle or sure.</p>
+    <form class="hand__sheet" id="hand-sheet">
+      <fieldset class="hand__status">
+        <legend class="mono">daemon</legend>
+        <p class="mono hand__stamp" data-status={stamp}>{stamp}</p>
+        <dl>
+          <div>
+            <dt>Gnosis RPC</dt>
+            <dd class="mono">{health ? (health.gnosisRpc ? "reachable" : "down") : "—"}</dd>
           </div>
-        </div>
-      </div>
+          <div>
+            <dt>IPFS gateway</dt>
+            <dd class="mono">{health ? (health.ipfsGateway ? "reachable" : "down") : "—"}</dd>
+          </div>
+          <div>
+            <dt>uptime</dt>
+            <dd class="mono" id="uptime">{hours(health?.uptime)}</dd>
+          </div>
+          <div>
+            <dt>last mark</dt>
+            <dd class="mono" id="last-cycle">{lastMark?.action ?? "—"}{lastMark?.timestamp ? ` · ${lastMark.timestamp.slice(0, 16)}` : ""}</dd>
+          </div>
+        </dl>
+      </fieldset>
 
-      <!-- Agent Status + Actions -->
-      <div class="controls__sidebar" data-reveal="group-item">
-        <!-- Status -->
-        <div class="controls__panel controls__panel--compact">
-          <div class="controls__panel-header">
-            <h3>Agent Status</h3>
-            <span class="status-dot status-dot--accepted"></span>
-          </div>
-          <div class="controls__status-grid">
-            <div class="controls__status-item">
-              <span class="controls__status-label">Phase</span>
-              <span class="controls__status-value mono" id="agent-phase">idle</span>
-            </div>
-            <div class="controls__status-item">
-              <span class="controls__status-label">Last cycle</span>
-              <span class="controls__status-value mono" id="last-cycle">—</span>
-            </div>
-            <div class="controls__status-item">
-              <span class="controls__status-label">Uptime</span>
-              <span class="controls__status-value mono" id="uptime">—</span>
-            </div>
-          </div>
+      <fieldset class="hand__queue">
+        <legend class="mono">
+          review queue
+          <span class="tabular" id="queue-count">{candidates.length}</span>
+        </legend>
+        <div id="candidate-queue">
+          {candidates.length === 0 ? (
+            <p class="hand__empty">
+              Empty. Either the agent is idle, or it was sure enough to skip this desk.
+            </p>
+          ) : (
+            candidates.map((c) => (
+              <article class="hand__item" data-id={c.id}>
+                <header>
+                  <span class="mono">{shortAddr(c.address)}</span>
+                  <span class={`chain-badge chain-badge--${c.chain}`}>{c.chain}</span>
+                  <span class="mono">{c.registry}</span>
+                </header>
+                <p>
+                  {c.contractName || "Unnamed"}
+                  <span class="mono">
+                    · conf {typeof c.confidence === "number" ? `${Math.round(c.confidence * 100)}%` : "—"}
+                  </span>
+                </p>
+                {c.agentReasoning && (
+                  <details>
+                    <summary class="mono">reasoning</summary>
+                    <pre>{c.agentReasoning}</pre>
+                  </details>
+                )}
+                <div class="hand__sign">
+                  <button type="button" class="hand__ink" data-id={c.id} data-action="approve" data-label={c.contractName || shortAddr(c.address)}>
+                    Approve
+                  </button>
+                  <button type="button" class="hand__ink hand__ink--reject" data-id={c.id} data-action="reject" data-label={c.contractName || shortAddr(c.address)}>
+                    Reject
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
         </div>
+      </fieldset>
 
-        <!-- Actions -->
-        <div class="controls__panel controls__panel--compact">
-          <div class="controls__panel-header">
-            <h3>Actions</h3>
-          </div>
-          <div class="controls__actions">
-            <button class="controls__btn" id="btn-discover">
-              <span>Trigger Discovery</span>
-              <span class="mono">→</span>
-            </button>
-            <button class="controls__btn controls__btn--secondary" id="btn-refresh">
-              <span>Refresh Stats</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <fieldset class="hand__actions">
+        <legend class="mono">scan</legend>
+        <p>Kick a discovery cycle. The pipeline walks eligible chains for untagged contracts.</p>
+        <button class="hand__ink hand__ink--primary" id="btn-discover" type="button">
+          Run a scan
+        </button>
+        <button class="hand__ink" id="btn-refresh" type="button">Refresh this sheet</button>
+        <button class="hand__ink" type="button" popovertarget="me-help">MetaEvidence</button>
+      </fieldset>
+    </form>
   </div>
+
+  <div id="me-help" popover class="folio-popover">
+    <p class="mono">MetaEvidence</p>
+    <p>
+      Jurors read the registry schema, not the agent’s notes. item.json must match those columns. If a challenge lands, this is the document that decides whether the 51.6 xDAI comes back.
+    </p>
+  </div>
+
+  <dialog class="verdict" id="verdict">
+    <form method="dialog">
+      <p class="mono verdict__kicker" id="verdict-kicker">verdict</p>
+      <p id="verdict-copy"></p>
+      <menu>
+        <button value="cancel" type="submit">Cancel</button>
+        <button value="confirm" id="verdict-confirm" type="submit">Sign</button>
+      </menu>
+    </form>
+  </dialog>
 </section>
 
 <script>
-  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+  import { API_BASE, type Candidate } from "../lib/dossier";
 
-  // Fetch candidates
+  type QueueItem = Candidate;
+
+  let pending: { id: string; action: "approve" | "reject" } | null = null;
+
+  function esc(s: string) {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c
+    );
+  }
+
+  function short(addr?: string | null) {
+    if (!addr) return "";
+    if (addr.length < 12) return addr;
+    return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+  }
+
   async function loadCandidates() {
+    const queue = document.getElementById("candidate-queue");
+    const count = document.getElementById("queue-count");
+    if (!queue || !count) return;
     try {
       const res = await fetch(`${API_BASE}/api/candidates?status=pending`);
-      const candidates = await res.json();
-      renderQueue(candidates);
+      const candidates = (await res.json()) as QueueItem[];
+      renderQueue(Array.isArray(candidates) ? candidates : []);
     } catch {
-      // API not available — leave empty state
+      /* leave baked HTML */
     }
   }
 
-  function renderQueue(candidates: any[]) {
+  function renderQueue(candidates: QueueItem[]) {
     const queue = document.getElementById("candidate-queue")!;
     const count = document.getElementById("queue-count")!;
     count.textContent = String(candidates.length);
-
-    if (candidates.length === 0) return;
-
-    queue.innerHTML = candidates.map((c: any) => `
-      <div class="controls__candidate">
-        <div class="controls__candidate-info">
-          <span class="mono">${c.address?.slice(0, 10)}...</span>
-          <span class="chain-badge chain-badge--${c.chain}">${c.chain}</span>
-        </div>
-        <div class="controls__candidate-meta">
-          <span>${c.contractName || "Unknown"}</span>
-          <span class="mono">conf: ${(c.confidence * 100).toFixed(0)}%</span>
-        </div>
-        <div class="controls__candidate-actions">
-          <button class="controls__btn-sm controls__btn-sm--approve" data-id="${c.id}">Approve</button>
-          <button class="controls__btn-sm controls__btn-sm--reject" data-id="${c.id}">Reject</button>
-        </div>
-      </div>
-    `).join("");
-
-    // Bind approve/reject
-    queue.querySelectorAll("[data-id]").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const id = (e.target as HTMLElement).dataset.id;
-        const action = (e.target as HTMLElement).classList.contains("controls__btn-sm--approve") ? "approve" : "reject";
-        await fetch(`${API_BASE}/api/candidates/${id}/${action}`, { method: "POST" });
-        loadCandidates();
-      });
-    });
+    if (candidates.length === 0) {
+      queue.innerHTML = `<p class="hand__empty">Empty. Either the agent is idle, or it was sure enough to skip this desk.</p>`;
+      return;
+    }
+    queue.replaceChildren();
+    for (const c of candidates) {
+      const card = document.createElement("article");
+      card.className = "hand__item";
+      const conf = typeof c.confidence === "number" ? `${Math.round(c.confidence * 100)}%` : "—";
+      const name = c.contractName || "Unnamed";
+      const label = name || short(c.address);
+      const reasoning = c.agentReasoning?.trim();
+      card.innerHTML = `
+        <header>
+          <span class="mono">${esc(short(c.address))}</span>
+          <span class="chain-badge chain-badge--${esc(c.chain)}">${esc(c.chain)}</span>
+          <span class="mono">${esc(c.registry)}</span>
+        </header>
+        <p>${esc(name)} <span class="mono">· conf ${esc(conf)}</span></p>
+        ${
+          reasoning
+            ? `<details><summary class="mono">reasoning</summary><pre>${esc(reasoning)}</pre></details>`
+            : ""
+        }
+        <div class="hand__sign">
+          <button type="button" class="hand__ink" data-id="${esc(c.id)}" data-action="approve" data-label="${esc(label)}">Approve</button>
+          <button type="button" class="hand__ink hand__ink--reject" data-id="${esc(c.id)}" data-action="reject" data-label="${esc(label)}">Reject</button>
+        </div>`;
+      queue.append(card);
+    }
   }
 
-  // Trigger discovery
-  document.getElementById("btn-discover")?.addEventListener("click", async () => {
-    const btn = document.getElementById("btn-discover") as HTMLButtonElement;
-    btn.disabled = true;
-    btn.querySelector("span")!.textContent = "Running...";
-    try {
-      await fetch(`${API_BASE}/api/discover`, { method: "POST" });
-    } catch {}
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.querySelector("span")!.textContent = "Trigger Discovery";
-      loadCandidates();
-    }, 3000);
-  });
+  function askVerdict(id: string, action: "approve" | "reject", label: string) {
+    const dialog = document.getElementById("verdict") as HTMLDialogElement | null;
+    const copy = document.getElementById("verdict-copy");
+    const kicker = document.getElementById("verdict-kicker");
+    const confirm = document.getElementById("verdict-confirm");
+    if (!dialog || !copy || !kicker || !confirm) return;
+    pending = { id, action };
+    kicker.textContent = action;
+    copy.textContent =
+      action === "approve"
+        ? `Approve ${label}? 51.6 xDAI goes on-chain until the 84-hour window closes.`
+        : `Reject ${label}? It will not spend Scout’s deposit.`;
+    confirm.textContent = action === "approve" ? "Approve" : "Reject";
+    dialog.showModal();
+  }
 
-  // Health polling
   async function pollHealth() {
     try {
       const res = await fetch(`${API_BASE}/api/health`);
@@ -154,207 +224,275 @@
         const mins = Math.floor((health.uptime % 3600) / 60);
         uptime.textContent = `${hrs}h ${mins}m`;
       }
-    } catch {}
+      const stamp = document.querySelector(".hand__stamp");
+      if (stamp && health.status) {
+        stamp.textContent = health.status;
+        stamp.setAttribute("data-status", health.status);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
-  // Init
-  loadCandidates();
-  pollHealth();
-  setInterval(pollHealth, 30000);
+  function boot() {
+    const root = document.getElementById("controls");
+    if (!root || root.dataset.bound === "1") return;
+    root.dataset.bound = "1";
+
+    document.getElementById("candidate-queue")?.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-action]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action as "approve" | "reject";
+      const label = btn.dataset.label || "this item";
+      if (id && action) askVerdict(id, action, label);
+    });
+
+    const dialog = document.getElementById("verdict") as HTMLDialogElement | null;
+    dialog?.addEventListener("close", async () => {
+      if (dialog.returnValue !== "confirm" || !pending) {
+        pending = null;
+        return;
+      }
+      const { id, action } = pending;
+      pending = null;
+      await fetch(`${API_BASE}/api/candidates/${id}/${action}`, { method: "POST" });
+      loadCandidates();
+    });
+
+    document.getElementById("btn-discover")?.addEventListener("click", async () => {
+      const btn = document.getElementById("btn-discover") as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = "Scanning…";
+      try {
+        await fetch(`${API_BASE}/api/discover`, { method: "POST" });
+      } catch {
+        /* ignore */
+      }
+      window.setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "Run a scan";
+        loadCandidates();
+      }, 3000);
+    });
+
+    document.getElementById("btn-refresh")?.addEventListener("click", () => {
+      loadCandidates();
+      pollHealth();
+    });
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    if (!document.getElementById("controls")) return;
+    boot();
+  });
 </script>
 
 <style>
-  .controls__grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
+  .hand__party {
+    color: var(--color-accent);
+    margin-right: 0.35rem;
+  }
+
+  .hand__sheet {
     margin-top: 2rem;
+    display: grid;
+    gap: 1.75rem;
+    max-width: 44rem;
   }
 
-  .controls__panel {
+  .hand__sheet fieldset {
+    border: 1px solid var(--color-border);
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    padding: 1.5rem;
+    padding: 1.15rem 1.25rem 1.35rem;
   }
 
-  .controls__panel--compact {
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .controls__panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .controls__panel-header h3 {
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-
-  .controls__badge {
-    background: var(--color-accent);
-    color: var(--color-accent-ink);
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 100px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .controls__queue {
-    max-height: 400px;
-    overflow-y: auto;
-  }
-
-  .controls__empty {
-    padding: 2rem;
-    text-align: center;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-inner);
-  }
-
-  .controls__empty p {
+  .hand__sheet legend {
+    padding: 0 0.4rem;
     color: var(--color-text-muted);
   }
 
-  .controls__empty p:last-child {
-    margin-top: 0.45rem;
-    font-size: 0.85rem;
+  #queue-count {
+    margin-left: 0.5rem;
+    color: var(--color-accent);
   }
 
-  .controls__candidate {
-    padding: 1rem;
-    border-bottom: 1px solid var(--color-border);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .hand__stamp {
+    display: inline-block;
+    margin: 0 0 1rem;
+    padding: 0.3rem 0.65rem;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
+    transform: rotate(-6deg);
+    letter-spacing: 0.14em;
   }
 
-  .controls__candidate-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .controls__candidate-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-  }
-
-  .controls__candidate-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .controls__btn-sm {
-    min-height: 40px;
-    min-width: 40px;
-    padding: 0.35rem 0.85rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-inner);
-    background: transparent;
-    color: var(--color-text);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition-property: transform, color, border-color, background-color;
-    transition-duration: 140ms;
-    transition-timing-function: var(--ease-out);
-  }
-
-  .controls__btn-sm:hover {
-    background: var(--color-bg);
-  }
-
-  .controls__btn-sm:active:not(:disabled) {
-    transform: scale(0.96);
-  }
-
-  .controls__btn-sm--approve:hover {
-    border-color: var(--color-success);
-    color: var(--color-success);
-  }
-
-  .controls__btn-sm--reject:hover {
+  .hand__stamp[data-status="degraded"],
+  .hand__stamp[data-status="unreachable"] {
     border-color: var(--color-error);
     color: var(--color-error);
   }
 
-  .controls__status-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .hand__status dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1.5rem;
   }
 
-  .controls__status-item {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-  }
-
-  .controls__status-label {
+  .hand__status dt {
     color: var(--color-text-muted);
+    font-size: 0.85rem;
   }
 
-  .controls__status-value {
+  .hand__status dd {
+    margin: 0.15rem 0 0;
     color: var(--color-text);
   }
 
-  .controls__actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .hand__empty {
+    margin: 0;
+    color: var(--color-text-muted);
   }
 
-  .controls__btn {
+  .hand__item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .hand__item header {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.85rem;
     align-items: center;
+  }
+
+  .hand__item p {
+    margin: 0.45rem 0 0;
+    color: var(--color-text);
+  }
+
+  .hand__item details {
+    margin-top: 0.6rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    padding: 0.4rem 0.65rem;
+  }
+
+  .hand__item summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .hand__item pre {
+    margin: 0.5rem 0 0.15rem;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .hand__sign,
+  .hand__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+
+  .hand__actions p {
+    flex: 1 1 100%;
+    margin: 0 0 0.35rem;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .hand__ink {
     min-height: 44px;
-    padding: 0.75rem 1rem;
-    background: var(--color-accent);
-    border: none;
-    border-radius: var(--radius-inner);
-    color: var(--color-accent-ink);
+    padding: 0 0.9rem;
+    background: transparent;
+    border: 1px solid var(--color-text);
+    color: var(--color-text);
     font-family: var(--font-sans);
     font-size: 0.85rem;
-    font-weight: 600;
     cursor: pointer;
-    transition-property: transform, opacity;
-    transition-duration: 140ms;
-    transition-timing-function: var(--ease-out);
   }
 
-  .controls__btn:hover:not(:disabled) {
-    opacity: 0.92;
+  .hand__ink:hover {
+    background: var(--color-bg);
   }
 
-  .controls__btn:active:not(:disabled) {
-    transform: scale(0.96);
+  .hand__ink--primary {
+    background: var(--color-text);
+    color: var(--color-bg);
   }
 
-  .controls__btn:disabled {
+  .hand__ink--reject {
+    border-color: var(--color-error);
+    color: var(--color-error);
+  }
+
+  .hand__ink:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  .controls__btn--secondary {
-    background: transparent;
+  .verdict {
+    width: min(28rem, calc(100vw - 2rem));
+    padding: 1.5rem;
     border: 1px solid var(--color-border);
+    background: var(--color-surface);
     color: var(--color-text);
   }
 
-  .controls__sidebar {
-    display: flex;
-    flex-direction: column;
+  .verdict::backdrop {
+    background: color-mix(in srgb, var(--color-text) 45%, transparent);
   }
 
-  @media (max-width: 768px) {
-    .controls__grid {
+  .verdict__kicker {
+    margin: 0 0 0.65rem;
+    color: var(--color-text-muted);
+  }
+
+  .verdict p {
+    margin: 0;
+  }
+
+  .verdict menu {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+  }
+
+  .verdict button {
+    min-height: 40px;
+    padding: 0 0.85rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+  }
+
+  .folio-popover {
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+
+  .folio-popover p:first-child {
+    margin: 0 0 0.45rem;
+    color: var(--color-accent);
+  }
+
+  .folio-popover p:last-child {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 640px) {
+    .hand__status dl {
       grid-template-columns: 1fr;
     }
   }

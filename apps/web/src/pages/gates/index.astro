@@ -1,0 +1,119 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+
+const stages = (await getCollection("gates")).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base
+  title="Six gates — Srelok"
+  description="Each gate protects someone: explorers, users, Scout, jurors, the TCR, the operator."
+>
+  <section class="gates section" id="pipeline">
+    <div class="container">
+      <p class="mono section-kicker">
+        <span class="gates__party" transition:name="party-scout">02</span>
+        six gates
+      </p>
+      <h2>Each gate protects someone</h2>
+      <p class="section-lede">
+        The index is the argument: explorers get names, Scout keeps a clean TCR, jurors get schema-true payloads, the operator only earns if the item survives. Open a leaf. The agent can stop at any gate.
+      </p>
+
+      <ol class="gates__list">
+        {stages.map((stage) => (
+          <li>
+            <a href={`/gates/${stage.id}`} data-astro-prefetch>
+              <span class="mono gates__idx" transition:name={`docket-${stage.id}`}>
+                {String(stage.data.order).padStart(2, "0")}
+              </span>
+              <span class="gates__copy">
+                <span class="gates__label">{stage.data.label}</span>
+                <span class="mono gates__for">for {stage.data.for}</span>
+                <span class="gates__stamp">{stage.data.stamp}</span>
+              </span>
+              <span class="gates__blurb">{(stage.body ?? "").trim()}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .gates__party {
+    color: var(--color-accent);
+    margin-right: 0.35rem;
+  }
+
+  .gates__list {
+    list-style: none;
+    margin: 2.25rem 0 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .gates__list a {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(8rem, 14rem) 1fr;
+    gap: 1rem 1.5rem;
+    align-items: baseline;
+    padding: 1.15rem 0;
+    border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .gates__idx {
+    color: var(--color-accent);
+    font-size: 1.1rem;
+  }
+
+  .gates__label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+  }
+
+  .gates__for {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--color-accent);
+  }
+
+  .gates__stamp {
+    display: inline-block;
+    margin-top: 0.45rem;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transform: rotate(-4deg);
+  }
+
+  .gates__blurb {
+    font-size: 0.98rem;
+    color: var(--color-text-muted);
+  }
+
+  .gates__list a:hover .gates__label {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 800px) {
+    .gates__list a {
+      grid-template-columns: 2.5rem 1fr;
+    }
+
+    .gates__blurb {
+      grid-column: 2;
+    }
+  }
+</style>

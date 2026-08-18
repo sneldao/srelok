@@ -1,0 +1,105 @@
+---
+/**
+ * Live ticks: only shipped on Evidence / Field / Hand.
+ * Updates the persisted blotter, the carbon log, and the field roster.
+ */
+---
+
+<script>
+  import { prefersReducedMotion } from "../lib/motion";
+  import { connectFeed, fetchStats, type FeedEvent } from "../lib/live";
+
+  const labels: Record<string, string> = {
+    candidate_found: "found",
+    submission_complete: "submitted",
+    discovery_started: "scan",
+    candidate_reviewed: "reviewed",
+  };
+
+  let booted = false;
+
+  function applyStats(stats: { totalSubmissions: number; totalPnkEarned: string }) {
+    const pnk = stats.totalPnkEarned || "0";
+    const submissions = String(stats.totalSubmissions ?? 0);
+    const pnkHud = document.getElementById("hud-pnk");
+    const pnkTotal = document.getElementById("total-pnk");
+    const subEl = document.getElementById("stat-submissions");
+    const pnkBrief = document.getElementById("hud-pnk-brief");
+    if (pnkHud) pnkHud.textContent = pnk;
+    if (pnkBrief) pnkBrief.textContent = pnk;
+    if (pnkTotal) pnkTotal.textContent = pnk;
+    if (subEl) subEl.textContent = submissions;
+  }
+
+  function tick(data: FeedEvent) {
+    const feedEl = document.getElementById("hud-feed");
+    if (feedEl) {
+      const chain = data.chain || "";
+      const addr = data.address ? `${data.address.slice(0, 6)}…${data.address.slice(-4)}` : "";
+      const label = labels[data.type] || data.type.replace(/_/g, " ");
+      feedEl.textContent = [chain, label, addr, data.name].filter(Boolean).join(" · ");
+      if (!prefersReducedMotion()) {
+        feedEl.classList.remove("is-flash");
+        void feedEl.offsetWidth;
+        feedEl.classList.add("is-flash");
+      }
+    }
+
+    const verbFor: Record<string, string> = {
+      candidate_found: "discover",
+      discovery_started: "discover",
+      submission_complete: "submit",
+    };
+    const verb = verbFor[data.type];
+    const hero = document.querySelector<HTMLElement>(".hero");
+    if (hero && verb) {
+      hero.querySelectorAll("[data-verb]").forEach((el) => {
+        el.classList.toggle("is-on", el.getAttribute("data-verb") === verb);
+      });
+    }
+
+    const liveMarks = document.getElementById("live-marks");
+    if (liveMarks) {
+      liveMarks.querySelector("#live-empty")?.remove();
+      const row = document.createElement("article");
+      row.className = "feed__entry";
+      const chain = data.chain || "agent";
+      const addr = data.address ? `${data.address.slice(0, 6)}…${data.address.slice(-4)}` : "";
+      const label = labels[data.type] || data.type.replace(/_/g, " ");
+      row.innerHTML = "";
+      const time = document.createElement("span");
+      time.className = "mono feed__time";
+      time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const badge = document.createElement("span");
+      badge.className = "mono feed__node";
+      badge.textContent = chain;
+      const meta = document.createElement("span");
+      meta.className = "feed__meta";
+      meta.textContent = [label, addr, data.name].filter(Boolean).join(" · ");
+      row.append(time, badge, meta);
+      liveMarks.prepend(row);
+    }
+
+    window.dispatchEvent(new CustomEvent("srelok:tick", { detail: data }));
+  }
+
+  function boot() {
+    if (booted) return;
+    booted = true;
+    fetchStats().then((stats) => {
+      if (stats) applyStats(stats);
+    });
+    connectFeed(tick);
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    fetchStats().then((stats) => {
+      if (stats) applyStats(stats);
+    });
+    const idle = (cb: () => void) => {
+      if ("requestIdleCallback" in window) window.requestIdleCallback(() => cb());
+      else window.setTimeout(cb, 1);
+    };
+    idle(() => boot());
+  });
+</script>

@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   --color-bg: #f1ead8;
   --color-surface: #fffaf0;
@@ -14,6 +10,8 @@
   --color-warning: #b8860b;
   --color-error: #c43c28;
   --color-field: #0c0e0c;
+  --color-punch: #c4b896;
+  --color-carbon: #1e3a4c;
 
   --chain-ethereum: #627eea;
   --chain-base: #0052ff;
@@ -64,28 +62,54 @@ body {
   font-family: var(--font-sans);
   line-height: 1.5;
   overflow-x: clip;
+  padding-bottom: 2.85rem;
 }
 
-html.lenis,
-html.lenis body {
-  height: auto;
+html[data-leaf="evidence"] body {
+  background-image:
+    repeating-linear-gradient(
+      transparent 0,
+      transparent 1.7rem,
+      color-mix(in srgb, var(--color-carbon) 11%, transparent) 1.7rem,
+      color-mix(in srgb, var(--color-carbon) 11%, transparent) calc(1.7rem + 1px)
+    );
 }
 
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
+html[data-leaf="field"] body {
+  background-color: #ebe4d0;
 }
 
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
+html[data-leaf="hand"] body {
+  background-image:
+    radial-gradient(
+      circle at 88% 18%,
+      color-mix(in srgb, var(--color-accent) 14%, transparent),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-text) 9%, transparent) 1px,
+      transparent 0
+    );
+  background-size: auto, 28px 28px;
 }
 
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-html.nav-open,
-html.nav-open body {
-  overflow: hidden;
+html[data-leaf="gates"] body {
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 2.4rem,
+      color-mix(in srgb, var(--color-error) 7%, transparent) 2.4rem,
+      color-mix(in srgb, var(--color-error) 7%, transparent) calc(2.4rem + 1px)
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-text) 9%, transparent) 1px,
+      transparent 0
+    );
+  background-size: auto, 28px 28px;
+  background-position: 2.75rem 0, 0 0;
 }
 
 h1, .h1,
@@ -202,6 +226,61 @@ p, .body {
   z-index: 1;
 }
 
+.content > .section:first-child {
+  border-top: 0;
+  padding-top: 7.25rem;
+}
+
+.folio-punch {
+  display: none;
+}
+
+.folio-keys {
+  display: none;
+}
+
+.folio-turn {
+  letter-spacing: 0.08em;
+}
+
+@keyframes folio-out {
+  to {
+    opacity: 0;
+    transform: translateX(-3.5%) scale(0.988);
+  }
+}
+
+@keyframes folio-in {
+  from {
+    opacity: 0;
+    transform: translateX(5.5%) scale(0.988);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+::view-transition-group(party-explorers),
+::view-transition-group(party-scout),
+::view-transition-group(party-operator),
+::view-transition-group(docket-discover),
+::view-transition-group(docket-research),
+::view-transition-group(docket-evaluate),
+::view-transition-group(docket-build),
+::view-transition-group(docket-submit),
+::view-transition-group(docket-track) {
+  animation-duration: 0.72s;
+  animation-timing-function: var(--ease-out-expo);
+}
+
 .site-footer {
   padding: 1.5rem 0 2.5rem;
   border-top: 1px solid var(--color-border);
@@ -231,6 +310,7 @@ p, .body {
 .site-footer__links {
   display: flex;
   gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 ::selection {
@@ -244,6 +324,45 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
+.print-masthead {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  body {
+    padding-right: 2.85rem;
+  }
+
+  .content > .section:first-child {
+    padding-top: 7.5rem;
+  }
+
+  .folio-punch {
+    display: block;
+    position: fixed;
+    left: 1.35rem;
+    top: 8.5rem;
+    z-index: 3;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--color-punch);
+    box-shadow:
+      inset 0 1px 2px rgb(0 0 0 / 0.18),
+      0 6.25rem 0 var(--color-punch),
+      0 12.5rem 0 var(--color-punch);
+    pointer-events: none;
+  }
+
+  .folio-keys {
+    display: block;
+    margin: 0.65rem auto 0;
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+    color: var(--color-text-muted);
+    opacity: 0.7;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -252,5 +371,61 @@ a:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .print-masthead {
+    display: block;
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #191611;
+    color: #191611;
+  }
+
+  .nav-shell,
+  .hud-rail,
+  .site-footer,
+  .folio-tabs,
+  .folio-punch,
+  .folio-keys,
+  .docket__aside-btn,
+  .docket__nav,
+  .controls__actions,
+  .controls__candidate-actions,
+  .field__well,
+  dialog,
+  [popover] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff;
+    background-image: none;
+    color: #191611;
+    padding: 0;
+    overflow: visible;
+  }
+
+  h1 {
+    font-size: 28pt;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .hero,
+  .docket,
+  .section {
+    padding: 0;
+    border: 0;
+  }
+
+  .hero__stats dd,
+  .field__amount {
+    color: #191611;
   }
 }

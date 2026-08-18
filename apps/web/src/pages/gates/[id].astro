@@ -1,0 +1,197 @@
+---
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import Base from "../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  const gates = await getCollection("gates");
+  const ordered = gates.sort((a, b) => a.data.order - b.data.order);
+  return ordered.map((gate, i) => ({
+    params: { id: gate.id },
+    props: {
+      gate,
+      prev: ordered[i - 1] ?? null,
+      next: ordered[i + 1] ?? null,
+    },
+  }));
+}
+
+interface Props {
+  gate: CollectionEntry<"gates">;
+  prev: CollectionEntry<"gates"> | null;
+  next: CollectionEntry<"gates"> | null;
+}
+
+const { gate, prev, next } = Astro.props;
+const { Content } = await render(gate);
+const n = String(gate.data.order).padStart(2, "0");
+---
+
+<Base
+  title={`${gate.data.label} — Srelok`}
+  description={gate.data.detail}
+>
+  <article class="docket">
+    <p class="mono docket__kicker">
+      gate {n} / 06 · for {gate.data.for}
+    </p>
+    <p class="docket__idx mono" transition:name={`docket-${gate.id}`}>{n}</p>
+    <h1>{gate.data.label}</h1>
+    <p class="mono docket__stamp">{gate.data.stamp}</p>
+    <div class="docket__body">
+      <Content />
+    </div>
+    <p class="mono docket__detail">{gate.data.detail}</p>
+
+    {gate.data.aside && (
+      <>
+        <button class="docket__aside-btn mono" type="button" popovertarget={`aside-${gate.id}`}>
+          MetaEvidence
+        </button>
+        <div id={`aside-${gate.id}`} popover class="folio-popover">
+          <p class="mono">note</p>
+          <p>{gate.data.aside}</p>
+        </div>
+      </>
+    )}
+
+    <p class="docket__stop mono">the agent may stop here</p>
+
+    <nav class="docket__nav" aria-label="Gates">
+      {prev ? (
+        <a href={`/gates/${prev.id}`} data-astro-prefetch>
+          <span class="mono">{String(prev.data.order).padStart(2, "0")}</span>
+          {prev.data.label}
+        </a>
+      ) : (
+        <a href="/gates" data-astro-prefetch><span class="mono">all</span> gates</a>
+      )}
+      {next ? (
+        <a href={`/gates/${next.id}`} data-astro-prefetch>
+          <span class="mono">{String(next.data.order).padStart(2, "0")}</span>
+          {next.data.label}
+        </a>
+      ) : (
+        <a href="/hand" data-astro-prefetch><span class="mono">03</span> hand</a>
+      )}
+    </nav>
+  </article>
+</Base>
+
+<style>
+  .docket {
+    padding: 7.25rem clamp(1.25rem, 4vw, 3.5rem) 4rem;
+    max-width: 42rem;
+  }
+
+  .docket__kicker {
+    margin: 0 0 1.25rem;
+    color: var(--color-text-muted);
+  }
+
+  .docket__idx {
+    margin: 0;
+    color: var(--color-accent);
+    font-size: clamp(3rem, 10vw, 7rem);
+    line-height: 0.85;
+    letter-spacing: -0.06em;
+  }
+
+  .docket h1 {
+    margin: 0.35rem 0 0;
+  }
+
+  .docket__stamp {
+    display: inline-block;
+    margin: 1.1rem 0 1.6rem;
+    padding: 0.35rem 0.7rem;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
+    transform: rotate(-5deg);
+    letter-spacing: 0.14em;
+  }
+
+  .docket__body {
+    background-image: repeating-linear-gradient(
+      transparent 0,
+      transparent 1.85rem,
+      color-mix(in srgb, var(--color-text) 10%, transparent) 1.85rem,
+      color-mix(in srgb, var(--color-text) 10%, transparent) calc(1.85rem + 1px)
+    );
+    background-position-y: 0.15rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .docket__body :global(p) {
+    margin: 0;
+    font-size: 1.15rem;
+    line-height: 1.85rem;
+    color: var(--color-text);
+  }
+
+  .docket__detail {
+    margin: 1.5rem 0 0;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-text-muted);
+  }
+
+  .docket__stop {
+    margin: 2.25rem 0 0;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--color-text);
+    color: var(--color-error);
+    letter-spacing: 0.12em;
+  }
+
+  .docket__aside-btn {
+    margin-top: 1.5rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    min-height: 40px;
+    padding: 0 0.85rem;
+    cursor: pointer;
+  }
+
+  .docket__nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .docket__nav a {
+    text-decoration: none;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .docket__nav a .mono {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--color-accent);
+  }
+
+  .folio-popover {
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .folio-popover p:first-child {
+    margin: 0 0 0.45rem;
+    color: var(--color-accent);
+  }
+
+  .folio-popover p:last-child {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+</style>

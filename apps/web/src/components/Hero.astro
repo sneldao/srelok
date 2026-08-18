@@ -1,27 +1,33 @@
 ---
-const steps = [
-  { id: "discover", label: "Discover", hint: "untagged → named" },
-  { id: "research", label: "Research", hint: "no guessing" },
-  { id: "evaluate", label: "Evaluate", hint: "protects the pool" },
-  { id: "build", label: "Build", hint: "MetaEvidence" },
-  { id: "submit", label: "Submit", hint: "deposit at risk" },
-  { id: "track", label: "Track", hint: "PNK if it stands" },
-];
+import { getCollection } from "astro:content";
+import { parties } from "../lib/folio";
+import {
+  atrColumns,
+  formatWhen,
+  gnosisAddress,
+  gnosisTx,
+  ipfsUrl,
+  parsePayload,
+  shortAddr,
+  type AgentStats,
+  type Submission,
+} from "../lib/dossier";
 
-const docket = [
-  {
-    who: "Explorers",
-    outcome: "A human name where the scan only showed a hex.",
-  },
-  {
-    who: "Kleros Scout",
-    outcome: "Policy-clean items. Junk never spends the 51.6 xDAI.",
-  },
-  {
-    who: "Operator",
-    outcome: "PNK from the monthly pools if the 84 hours pass.",
-  },
-];
+interface Props {
+  stats: AgentStats;
+  exhibit?: Submission;
+}
+
+const { stats, exhibit } = Astro.props;
+const steps = (await getCollection("gates")).sort((a, b) => a.data.order - b.data.order);
+
+const named = stats.totalSubmissions > 0 ? String(stats.totalSubmissions) : "—";
+const pnk = stats.totalPnkEarned && stats.totalPnkEarned !== "0" ? stats.totalPnkEarned : "—";
+const payload = exhibit ? parsePayload(exhibit.payloadJson) : null;
+const values =
+  payload && typeof payload === "object" && payload.values && typeof payload.values === "object"
+    ? (payload.values as Record<string, string>)
+    : null;
 ---
 
 <section class="hero" id="hero">
@@ -39,11 +45,15 @@ const docket = [
   </div>
 
   <ol class="hero__docket">
-    {docket.map((row, i) => (
+    {parties.map((row, i) => (
       <li>
-        <span class="mono hero__docket-idx">{String(i + 1).padStart(2, "0")}</span>
-        <span class="mono hero__docket-who">{row.who}</span>
-        <span class="hero__docket-out">{row.outcome}</span>
+        <a href={row.href} data-astro-prefetch>
+          <span class="mono hero__docket-idx" transition:name={`party-${row.id}`}>
+            {String(i + 1).padStart(2, "0")}
+          </span>
+          <span class="mono hero__docket-who">{row.who}</span>
+          <span class="hero__docket-out">{row.outcome}</span>
+        </a>
       </li>
     ))}
   </ol>
@@ -51,7 +61,7 @@ const docket = [
   <dl class="hero__stats">
     <div>
       <dt class="mono">named this cycle</dt>
-      <dd class="tabular" id="stat-submissions">0</dd>
+      <dd class="tabular" id="stat-submissions">{named}</dd>
     </div>
     <div>
       <dt class="mono">explorers watched</dt>
@@ -63,30 +73,117 @@ const docket = [
     </div>
     <div>
       <dt class="mono">PNK to operator</dt>
-      <dd class="tabular" id="hud-pnk">0</dd>
+      <dd class="tabular" id="hud-pnk-brief">{pnk}</dd>
     </div>
   </dl>
 
   <ol class="hero__steps">
-    {steps.map((s, i) => (
+    {steps.map((s) => (
       <li class="hero__step" data-verb={s.id}>
-        <a href={`#${s.id}`}>
-          <span class="mono hero__idx">{String(i + 1).padStart(2, "0")}</span>
-          <span class="hero__label">{s.label}</span>
-          <span class="hero__hint">{s.hint}</span>
+        <a href={`/gates/${s.id}`} data-astro-prefetch>
+          <span class="mono hero__idx" transition:name={`docket-${s.id}`}>
+            {String(s.data.order).padStart(2, "0")}
+          </span>
+          <span class="hero__label">{s.data.label}</span>
+          <span class="hero__hint">{s.data.hint}</span>
         </a>
       </li>
     ))}
   </ol>
 
-  <p class="hero__hud mono" id="hud-feed">awaiting evidence from the daemon</p>
+  <aside class="exhibit">
+    {exhibit ? (
+      <>
+        <p class="mono exhibit__kicker">exhibit · latest on Gnosis</p>
+        <p class="exhibit__tag">{exhibit.tag || shortAddr(exhibit.address) || "untitled item"}</p>
+        <dl class="exhibit__meta">
+          <div>
+            <dt class="mono">address</dt>
+            <dd>
+              <a href={gnosisAddress(exhibit.address)} target="_blank" rel="noopener" class="mono">
+                {shortAddr(exhibit.address)}
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt class="mono">registry</dt>
+            <dd class="mono">{exhibit.registry}</dd>
+          </div>
+          <div>
+            <dt class="mono">status</dt>
+            <dd class="mono">{exhibit.status}</dd>
+          </div>
+          <div>
+            <dt class="mono">when</dt>
+            <dd class="mono">{formatWhen(exhibit.submittedAt)}</dd>
+          </div>
+        </dl>
+        <p class="exhibit__links mono">
+          {exhibit.txHash && (
+            <a href={gnosisTx(exhibit.txHash)} target="_blank" rel="noopener">tx</a>
+          )}
+          {exhibit.ipfsCid && (
+            <a href={ipfsUrl(exhibit.ipfsCid)} target="_blank" rel="noopener">item.json</a>
+          )}
+          <a href="/evidence">full log</a>
+        </p>
+        <details class="exhibit__payload">
+          <summary class="mono">item.json</summary>
+          {values ? (
+            <dl>
+              {Object.entries(values).map(([k, v]) => (
+                <div>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <pre>{exhibit.payloadJson || "payload not stored"}</pre>
+          )}
+        </details>
+      </>
+    ) : (
+      <>
+        <p class="mono exhibit__kicker">exhibit · ATR schema · no item on file yet</p>
+        <p class="exhibit__tag">The form jurors read</p>
+        <p class="exhibit__note">
+          Until the daemon lands an addItem, this is the Address Tags shape — column for column with MetaEvidence. Empty on purpose.
+        </p>
+        <details class="exhibit__payload" open>
+          <summary class="mono">item.json columns</summary>
+          <ol>
+            {atrColumns.map((col) => (
+              <li>
+                <span class="mono">{col}</span>
+                <span class="exhibit__blank">—</span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </>
+    )}
+  </aside>
 </section>
 
 <style>
   .hero {
     display: grid;
     gap: 2.25rem;
-    padding: 7rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
+    padding: 7.25rem clamp(1.25rem, 4vw, 3.5rem) 3rem;
+  }
+
+  .hero > * {
+    animation: rise 0.7s var(--ease-out-expo) both;
+  }
+
+  .hero__docket { animation-delay: 0.06s; }
+  .hero__stats { animation-delay: 0.12s; }
+  .hero__steps { animation-delay: 0.18s; }
+  .exhibit { animation-delay: 0.22s; }
+
+  :global(html:active-view-transition) .hero > * {
+    animation: none;
   }
 
   .hero__kicker {
@@ -131,17 +228,20 @@ const docket = [
     max-width: 40rem;
   }
 
-  .hero__docket li {
+  .hero__docket a {
     display: grid;
     grid-template-columns: 2.2rem 7.5rem 1fr;
     gap: 0.75rem;
     align-items: baseline;
     padding: 0.65rem 0;
     border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
   }
 
   .hero__docket-idx {
     color: var(--color-accent);
+    display: inline-block;
   }
 
   .hero__docket-who {
@@ -151,6 +251,10 @@ const docket = [
   .hero__docket-out {
     font-size: 0.95rem;
     color: var(--color-text-muted);
+  }
+
+  .hero__docket a:hover .hero__docket-who {
+    color: var(--color-accent);
   }
 
   .hero__stats {
@@ -170,6 +274,8 @@ const docket = [
 
   .hero__stats dd {
     margin: 0;
+    min-width: 4ch;
+    min-height: 1em;
     font-family: var(--font-display);
     font-size: clamp(1.75rem, 4vw, 2.4rem);
     font-weight: 600;
@@ -200,6 +306,7 @@ const docket = [
 
   .hero__idx {
     color: var(--color-accent);
+    display: inline-block;
   }
 
   .hero__label {
@@ -219,18 +326,99 @@ const docket = [
     color: var(--color-accent);
   }
 
-  .hero__hud {
+  .exhibit {
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--color-border);
+    max-width: 40rem;
+  }
+
+  .exhibit__kicker {
+    margin: 0 0 0.45rem;
+    color: var(--color-accent);
+  }
+
+  .exhibit__tag {
     margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+  }
+
+  .exhibit__note {
+    margin: 0.5rem 0 0;
+    font-size: 0.95rem;
+  }
+
+  .exhibit__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 1.25rem;
+    margin: 1rem 0 0;
+  }
+
+  .exhibit__meta dt {
     color: var(--color-text-muted);
   }
 
-  #hud-feed.is-flash {
-    animation: flash 0.55s var(--ease-out);
+  .exhibit__meta dd {
+    margin: 0.15rem 0 0;
+    color: var(--color-text);
   }
 
-  @keyframes flash {
-    from { opacity: 0.35; }
-    to { opacity: 1; }
+  .exhibit__meta a {
+    color: var(--color-text);
+  }
+
+  .exhibit__links {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0.9rem 0 0;
+  }
+
+  .exhibit__links a {
+    color: var(--color-text);
+  }
+
+  .exhibit__payload {
+    margin-top: 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 0.55rem 0.75rem;
+  }
+
+  .exhibit__payload summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .exhibit__payload ol,
+  .exhibit__payload dl {
+    margin: 0.7rem 0 0.2rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .exhibit__payload li,
+  .exhibit__payload dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.85rem;
+  }
+
+  .exhibit__blank {
+    color: var(--color-text-muted);
+  }
+
+  .exhibit__payload pre {
+    margin: 0.65rem 0 0.2rem;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
   }
 
   @media (min-width: 960px) {
@@ -242,41 +430,29 @@ const docket = [
       padding-top: 8rem;
     }
 
-    .hero__copy {
-      grid-column: 1;
-      grid-row: 1;
-    }
-
-    .hero__docket {
-      grid-column: 1;
-      grid-row: 2;
-      max-width: none;
-    }
-
+    .hero__copy { grid-column: 1; grid-row: 1; }
+    .hero__docket { grid-column: 1; grid-row: 2; max-width: none; }
     .hero__stats {
       grid-column: 1;
       grid-row: 3;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       max-width: none;
     }
-
     .hero__steps {
       grid-column: 2;
       grid-row: 1 / span 3;
       border-top: 0;
       align-self: start;
     }
-
-    .hero__hud {
+    .exhibit {
       grid-column: 1 / -1;
       grid-row: 4;
-      padding-top: 0.25rem;
-      border-top: 1px solid var(--color-border);
+      max-width: none;
     }
   }
 
   @media (max-width: 640px) {
-    .hero__docket li {
+    .hero__docket a {
       grid-template-columns: 2.2rem 1fr;
     }
 
@@ -286,7 +462,7 @@ const docket = [
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #hud-feed.is-flash {
+    .hero > * {
       animation: none;
     }
   }

@@ -64,8 +64,8 @@ func main() {
 		Addr:         ":" + port,
 		Handler:      corsMiddleware(mux),
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		WriteTimeout: 0, // SSE /api/feed must not be cut by a write deadline
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// Graceful shutdown

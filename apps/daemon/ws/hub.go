@@ -17,6 +17,9 @@ type Hub struct {
 	broadcast  chan []byte
 	register   chan *Client
 	unregister chan *Client
+	sse        map[chan []byte]struct{}
+	sseReg     chan chan []byte
+	sseUnreg   chan chan []byte
 	mu         sync.RWMutex
 }
 
@@ -32,6 +35,9 @@ func NewHub() *Hub {
 		broadcast:  make(chan []byte, 256),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		sse:        make(map[chan []byte]struct{}),
+		sseReg:     make(chan chan []byte),
+		sseUnreg:   make(chan chan []byte),
 	}
 }
 
@@ -53,6 +59,19 @@ func (h *Hub) Run() {
 			h.mu.Unlock()
 			log.Printf("WebSocket client disconnected (%d total)", len(h.clients))
 
+		case ch := <-h.sseReg:
+			h.mu.Lock()
+			h.sse[ch] = struct{}{}
+			h.mu.Unlock()
+
+		case ch := <-h.sseUnreg:
+			h.mu.Lock()
+			if _, ok := h.sse[ch]; ok {
+				delete(h.sse, ch)
+				close(ch)
+			}
+			h.mu.Unlock()
+
 		case msg := <-h.broadcast:
 			h.mu.RLock()
 			for client := range h.clients {
@@ -63,9 +82,23 @@ func (h *Hub) Run() {
 					delete(h.clients, client)
 				}
 			}
+			for ch := range h.sse {
+				select {
+				case ch <- msg:
+				default:
+				}
+			}
 			h.mu.RUnlock()
 		}
 	}
+}
+
+// SubscribeSSE receives hub broadcasts as an SSE/event stream. The caller must
+// invoke the returned unsubscribe function.
+func (h *Hub) SubscribeSSE() (<-chan []byte, func()) {
+	ch := make(chan []byte, 16)
+	h.sseReg <- ch
+	return ch, func() { h.sseUnreg <- ch }
 }
 
 // Broadcast sends a message to all connected clients.

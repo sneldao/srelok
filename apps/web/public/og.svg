@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#f1ead8"/>
+  <circle cx="72" cy="180" r="10" fill="#c4b896"/>
+  <circle cx="72" cy="280" r="10" fill="#c4b896"/>
+  <circle cx="72" cy="380" r="10" fill="#c4b896"/>
+  <text x="120" y="160" font-family="Georgia, serif" font-size="28" fill="#0d8f5b">SRELOK · GNOSIS · SCOUT</text>
+  <text x="120" y="280" font-family="Georgia, serif" font-size="72" font-weight="600" fill="#191611">Names for the untagged.</text>
+  <text x="120" y="360" font-family="Georgia, serif" font-size="72" font-weight="600" fill="#191611">PNK if they stand.</text>
+  <text x="120" y="520" font-family="ui-monospace, monospace" font-size="22" fill="#4f4a40">BRIEF · GATES · EVIDENCE · FIELD · HAND</text>
+  <rect x="1100" y="80" width="36" height="470" fill="#191611"/>
+</svg>

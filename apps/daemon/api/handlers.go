@@ -219,7 +219,10 @@ func FeedHandler(hub *ws.Hub) http.HandlerFunc {
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-		writeSSE(w, flusher, "connected", `{"status":"ok"}`)
+		ch, unsub := hub.SubscribeSSE()
+		defer unsub()
+
+		writeSSE(w, flusher, `{"type":"connected","status":"ok"}`)
 
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
@@ -229,8 +232,13 @@ func FeedHandler(hub *ws.Hub) http.HandlerFunc {
 			select {
 			case <-ctx.Done():
 				return
+			case msg, ok := <-ch:
+				if !ok {
+					return
+				}
+				writeSSE(w, flusher, string(msg))
 			case <-ticker.C:
-				writeSSE(w, flusher, "heartbeat", `{"time":"`+time.Now().UTC().Format(time.RFC3339)+`"}`)
+				writeSSE(w, flusher, `{"type":"heartbeat","time":"`+time.Now().UTC().Format(time.RFC3339)+`"}`)
 			}
 		}
 	}
@@ -243,7 +251,7 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func writeSSE(w http.ResponseWriter, f http.Flusher, event, data string) {
-	w.Write([]byte("event: " + event + "\ndata: " + data + "\n\n"))
+func writeSSE(w http.ResponseWriter, f http.Flusher, data string) {
+	w.Write([]byte("data: " + data + "\n\n"))
 	f.Flush()
 }

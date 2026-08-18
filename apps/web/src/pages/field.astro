@@ -1,0 +1,233 @@
+---
+import Base from "../layouts/Base.astro";
+import Live from "../components/Live.astro";
+import { chains, registries } from "../lib/folio";
+import { gnosisAddress, loadDossier, shortAddr } from "../lib/dossier";
+
+const { stats } = await loadDossier();
+const pnk = stats.totalPnkEarned && stats.totalPnkEarned !== "0" ? stats.totalPnkEarned : "—";
+---
+
+<Base
+  title="Field — Srelok"
+  description="Twelve explorers, four Scout registries on Gnosis, the operator’s take if an item stands."
+>
+  <section class="field section" id="field">
+    <div class="container">
+      <p class="mono section-kicker">
+        <span class="field__party" transition:name="party-explorers">01</span>
+        the beat
+      </p>
+      <h2>Twelve explorers. Four pools. Settlement on Gnosis.</h2>
+      <p class="section-lede">
+        Scout pays on four Gnosis registries. Discovery walks the other chains looking for an explorer gap. The operator’s take is only paid if the item survives 84 hours.
+      </p>
+
+      <div class="field__stage">
+        <ol class="field__roster" id="field-roster">
+          {chains.map((c) => (
+            <li>
+              <span class={`chain-badge chain-badge--${c.id}`}>{c.label}</span>
+              <span class="mono field__role">{c.role}</span>
+            </li>
+          ))}
+        </ol>
+
+        <div class="field__earned">
+          <span class="mono">operator take · recorded</span>
+          <p>
+            <span class="field__amount tabular" id="total-pnk">{pnk}</span>
+            <span class="mono">PNK</span>
+          </p>
+          <dl class="field__live">
+            <div>
+              <dt class="mono">in the queue</dt>
+              <dd class="tabular">{stats.candidatesInQueue}</dd>
+            </div>
+            <div>
+              <dt class="mono">pending on-chain</dt>
+              <dd class="tabular">{stats.pending}</dd>
+            </div>
+            <div>
+              <dt class="mono">challenged</dt>
+              <dd class="tabular">{stats.challenged}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="field__table" role="table">
+        <div class="field__row field__row--head mono" role="row">
+          <span>Registry</span>
+          <span>Serves</span>
+          <span>Pool / month</span>
+          <span>Cap</span>
+          <span>Contract</span>
+        </div>
+        {registries.map((reg) => (
+          <div class="field__row" role="row">
+            <span>{reg.label}<span class="mono field__gate"> · {reg.gate}</span></span>
+            <span>{reg.serves}</span>
+            <span class="mono">{reg.pool}</span>
+            <span class="mono">{reg.max}</span>
+            <a class="mono" href={gnosisAddress(reg.contract)} target="_blank" rel="noopener">
+              {shortAddr(reg.contract)}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+  <Live />
+</Base>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const roster = document.getElementById("field-roster");
+    if (!roster) return;
+    const onTick = () => {
+      roster.classList.remove("is-tick");
+      void roster.offsetWidth;
+      roster.classList.add("is-tick");
+    };
+    window.addEventListener("srelok:tick", onTick);
+    document.addEventListener(
+      "astro:before-swap",
+      () => window.removeEventListener("srelok:tick", onTick),
+      { once: true }
+    );
+  });
+</script>
+
+<style>
+  .field__party {
+    color: var(--color-accent);
+    margin-right: 0.35rem;
+  }
+
+  .field__stage {
+    display: grid;
+    gap: 2rem;
+    margin: 2.5rem 0 2.25rem;
+    align-items: start;
+  }
+
+  .field__roster {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .field__roster li {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+
+  .field__role {
+    color: var(--color-text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.78rem;
+  }
+
+  .field__roster.is-tick .chain-badge {
+    animation: tick 0.55s var(--ease-out);
+  }
+
+  @keyframes tick {
+    from { opacity: 0.35; }
+    to { opacity: 1; }
+  }
+
+  .field__earned p {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin: 0.35rem 0 0;
+    color: var(--color-text);
+  }
+
+  .field__amount {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    min-width: 3ch;
+    display: inline-block;
+  }
+
+  .field__live {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 0;
+  }
+
+  .field__live dt {
+    color: var(--color-text-muted);
+  }
+
+  .field__live dd {
+    margin: 0.2rem 0 0;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .field__table {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .field__row {
+    display: grid;
+    grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr 1fr;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--color-border);
+    align-items: baseline;
+  }
+
+  .field__row a {
+    color: var(--color-text);
+  }
+
+  .field__row--head {
+    color: var(--color-text-muted);
+    padding-top: 0;
+    border-bottom-width: 2px;
+  }
+
+  .field__gate {
+    color: var(--color-text-muted);
+  }
+
+  @media (min-width: 900px) {
+    .field__stage {
+      grid-template-columns: minmax(18rem, 1fr) minmax(14rem, 0.8fr);
+      column-gap: 3.5rem;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .field__row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .field__row span:nth-child(n + 3),
+    .field__row a,
+    .field__row--head span:nth-child(n + 3) {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .field__roster.is-tick .chain-badge {
+      animation: none;
+    }
+  }
+</style>
